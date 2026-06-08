@@ -39,6 +39,7 @@ dayjs.locale("ko");
       promotions: [],
       currentEditId: null,
       promotionEntryMode: "direct",
+      youtubeInsightTab: "summary",
       pendingConfirm: null,
       table: null,
       charts: {},
@@ -67,6 +68,10 @@ dayjs.locale("ko");
       addPromotionBtn: $("#addPromotionBtn"),
       loadSampleBtn: $("#loadSampleBtn"),
       kpiGrid: $("#kpiGrid"),
+      youtubeInsightTabs: $("#youtubeInsightTabs"),
+      youtubeInsightSummary: $("#youtubeInsightSummary"),
+      youtubeBudgetJudgment: $("#youtubeBudgetJudgment"),
+      youtubeCreativeJudgment: $("#youtubeCreativeJudgment"),
       tableSearchInput: $("#tableSearchInput"),
       statusFilterSelect: $("#statusFilterSelect"),
       goalFilterSelect: $("#goalFilterSelect"),
@@ -161,6 +166,7 @@ dayjs.locale("ko");
       return {
         cpv: divide(cost, views),
         cpm: divide(cost, impressions) * 1000,
+        viewRate: percent(views, impressions),
         visitRate: percent(visitors, views),
         costPerVisitor: divide(cost, visitors),
         subscribeRate: percent(subscribers, views)
@@ -183,10 +189,97 @@ dayjs.locale("ko");
         createdAtLabel: item.createdAt ? dayjs(item.createdAt).format("YYYY.MM.DD") : "-",
         cpv: metrics.cpv,
         cpm: metrics.cpm,
+        viewRate: metrics.viewRate,
         visitRate: metrics.visitRate,
         costPerVisitor: metrics.costPerVisitor,
         subscribeRate: metrics.subscribeRate
       };
+    }
+
+    function getPromotionBenchmarks(items) {
+      const active = items.filter((item) => item.views > 0 || item.impressions > 0 || item.visitors > 0);
+      return {
+        avgCost: divide(active.reduce((sum, item) => sum + item.cost, 0), active.length),
+        avgViews: divide(active.reduce((sum, item) => sum + item.views, 0), active.length),
+        avgVisitors: divide(active.reduce((sum, item) => sum + item.visitors, 0), active.length),
+        avgViewRate: percent(active.reduce((sum, item) => sum + item.views, 0), active.reduce((sum, item) => sum + item.impressions, 0)),
+        avgVisitRate: percent(active.reduce((sum, item) => sum + item.visitors, 0), active.reduce((sum, item) => sum + item.views, 0)),
+        avgSubscribeRate: percent(active.reduce((sum, item) => sum + item.subscribers, 0), active.reduce((sum, item) => sum + item.views, 0)),
+        medianCpv: median(active.map((item) => item.cpv).filter((value) => value > 0)),
+        medianCostPerVisitor: median(active.map((item) => item.costPerVisitor).filter((value) => value > 0))
+      };
+    }
+
+    function classifyPromotion(item, benchmarks) {
+      if (item.impressions < 5000 || item.views < 300) {
+        return {
+          key: "insufficient",
+          label: "데이터 부족",
+          reason: "노출 또는 조회수가 아직 적어 추가 관찰이 필요합니다."
+        };
+      }
+
+      const strongVisit = benchmarks.avgVisitRate > 0 && item.visitRate >= benchmarks.avgVisitRate * 1.12;
+      const strongView = benchmarks.avgViewRate > 0 && item.viewRate >= benchmarks.avgViewRate * 1.08;
+      const strongSubscribe = item.subscribers > 0 && item.subscribeRate >= Math.max(benchmarks.avgSubscribeRate, 0.01);
+      const efficientCpv = item.cpv > 0 && (!benchmarks.medianCpv || item.cpv <= benchmarks.medianCpv * 1.08);
+      const costly = benchmarks.avgCost > 0 && item.cost >= benchmarks.avgCost * 1.15;
+      const weakVisit = benchmarks.avgVisitRate > 0 && item.visitRate <= benchmarks.avgVisitRate * 0.75;
+      const weakView = benchmarks.avgViewRate > 0 && item.viewRate <= benchmarks.avgViewRate * 0.75;
+      const highVisitorCost = item.costPerVisitor > 0 && benchmarks.medianCostPerVisitor > 0 && item.costPerVisitor >= benchmarks.medianCostPerVisitor * 1.35;
+
+      if (strongVisit && strongView && efficientCpv) {
+        return {
+          key: "core",
+          label: "핵심 프로모션",
+          reason: "조회 흐름과 방문 전환이 모두 평균 이상입니다."
+        };
+      }
+
+      if ((strongVisit || strongSubscribe) && efficientCpv) {
+        return {
+          key: "scale",
+          label: "확대 후보",
+          reason: "성과 흐름이 양호해 예산 확대를 검토할 수 있습니다."
+        };
+      }
+
+      if (costly && (weakVisit || weakView || highVisitorCost)) {
+        return {
+          key: "review",
+          label: "점검 필요",
+          reason: "비용 규모 대비 조회 또는 방문 흐름이 약합니다."
+        };
+      }
+
+      if (item.views >= benchmarks.avgViews * 1.1 && weakVisit) {
+        return {
+          key: "creative",
+          label: "소재 점검",
+          reason: "조회는 발생하지만 방문 전환이 약합니다."
+        };
+      }
+
+      return {
+        key: "maintain",
+        label: "유지",
+        reason: "현재 필터 기준에서 평균적인 성과 흐름입니다."
+      };
+    }
+
+    function applyPromotionAnalysis(items) {
+      const benchmarks = getPromotionBenchmarks(items);
+      const scoreMap = new Map(scorePromotions(items).map((item) => [item.id, item.performanceScore]));
+      return items.map((item) => {
+        const grade = classifyPromotion(item, benchmarks);
+        return {
+          ...item,
+          performanceScore: scoreMap.get(item.id) ?? 0,
+          gradeKey: grade.key,
+          gradeLabel: grade.label,
+          gradeReason: grade.reason
+        };
+      });
     }
 
     function getEnrichedPromotions() {
@@ -195,7 +288,7 @@ dayjs.locale("ko");
 
     function getFilteredPromotions() {
       const keyword = appState.filters.search.trim().toLowerCase();
-      return getEnrichedPromotions().filter((item) => {
+      const filtered = getEnrichedPromotions().filter((item) => {
         const matchesSearch = !keyword || [item.name, item.title, item.description, item.videoUrl]
           .join(" ")
           .toLowerCase()
@@ -204,6 +297,7 @@ dayjs.locale("ko");
         const matchesGoal = appState.filters.goal === "all" || item.goal === appState.filters.goal;
         return matchesSearch && matchesStatus && matchesGoal;
       });
+      return applyPromotionAnalysis(filtered);
     }
 
     function loadPromotions() {
@@ -342,6 +436,7 @@ dayjs.locale("ko");
     function scorePromotions(items = getEnrichedPromotions()) {
       if (!items.length) return [];
       const values = {
+        viewRate: items.map((item) => item.viewRate),
         visitRate: items.map((item) => item.visitRate),
         subscribeRate: items.map((item) => item.subscribeRate),
         costPerVisitor: items.map((item) => item.costPerVisitor).filter((value) => value > 0),
@@ -354,6 +449,7 @@ dayjs.locale("ko");
       });
 
       const ranges = {
+        viewRate: minMax(values.viewRate),
         visitRate: minMax(values.visitRate),
         subscribeRate: minMax(values.subscribeRate),
         costPerVisitor: minMax(values.costPerVisitor.length ? values.costPerVisitor : [0]),
@@ -368,10 +464,11 @@ dayjs.locale("ko");
 
       return items.map((item) => {
         const score =
-          normalizeHigh(item.visitRate, ranges.visitRate) * 40 +
-          normalizeHigh(item.subscribeRate, ranges.subscribeRate) * 30 +
-          normalizeLow(item.costPerVisitor, ranges.costPerVisitor) * 20 +
-          normalizeLow(item.cpv, ranges.cpv) * 10;
+          normalizeHigh(item.visitRate, ranges.visitRate) * 38 +
+          normalizeHigh(item.viewRate, ranges.viewRate) * 24 +
+          normalizeHigh(item.subscribeRate, ranges.subscribeRate) * 20 +
+          normalizeLow(item.cpv, ranges.cpv) * 10 +
+          normalizeLow(item.costPerVisitor, ranges.costPerVisitor) * 8;
 
         return {
           ...item,
@@ -618,6 +715,7 @@ dayjs.locale("ko");
         columns: [
           { title: "프로모션명", field: "name", frozen: true, minWidth: 180 },
           { title: "상태", field: "statusLabel", width: 110, formatter: statusFormatter },
+          { title: "프로모션 등급", field: "gradeLabel", width: 140, formatter: gradeFormatter },
           { title: "목표", field: "goalLabel", width: 100 },
           { title: "생성일", field: "createdAt", width: 120, sorter: "date", formatter: (cell) => dayjs(cell.getValue()).format("YYYY.MM.DD") },
           { title: "비용", field: "cost", hozAlign: "right", sorter: "number", formatter: (cell) => formatCurrency(cell.getValue()) },
@@ -635,6 +733,11 @@ dayjs.locale("ko");
     function statusFormatter(cell) {
       const row = cell.getRow().getData();
       return `<span class="pill ${row.status}">${row.statusLabel}</span>`;
+    }
+
+    function gradeFormatter(cell) {
+      const row = cell.getRow().getData();
+      return `<span class="action-badge grade-${row.gradeKey}" title="${escapeHtml(row.gradeReason || "")}">${escapeHtml(row.gradeLabel || "-")}</span>`;
     }
 
     function actionFormatter(cell) {
@@ -911,6 +1014,211 @@ dayjs.locale("ko");
       });
     }
 
+    function switchYoutubeAnalysisTab(tab) {
+      appState.youtubeInsightTab = tab;
+      if (!dom.youtubeInsightTabs) return;
+      dom.youtubeInsightTabs.querySelectorAll("[data-youtube-analysis-tab]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.youtubeAnalysisTab === tab);
+      });
+      document.querySelectorAll("[data-youtube-analysis-panel]").forEach((panel) => {
+        panel.classList.toggle("active", panel.dataset.youtubeAnalysisPanel === tab);
+      });
+    }
+
+    function promotionListMarkup(items, valueFormatter) {
+      if (!items.length) return `<p>현재 필터 기준으로 표시할 항목이 없습니다.</p>`;
+      return `
+        <div class="rank-list">
+          ${items.map((item, index) => `
+            <div class="rank-row">
+              <span class="rank-index">${index + 1}</span>
+              <span class="rank-main">
+                <strong>${escapeHtml(item.name)}</strong>
+                <span>${escapeHtml(item.gradeLabel)} · ${escapeHtml(item.gradeReason)}</span>
+              </span>
+              <span class="rank-score">${valueFormatter(item)}</span>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderYoutubeInsightSummary(items, totals) {
+      if (!dom.youtubeInsightSummary) return;
+      if (!items.length) {
+        dom.youtubeInsightSummary.innerHTML = emptyStateMarkup("분석할 프로모션 데이터가 없습니다", "프로모션을 등록하거나 CSV를 가져오면 인사이트가 표시됩니다.");
+        return;
+      }
+
+      const scored = scorePromotions(items);
+      const best = scored[0];
+      const coreItems = items.filter((item) => ["core", "scale"].includes(item.gradeKey)).sort((a, b) => b.performanceScore - a.performanceScore);
+      const reviewItems = items.filter((item) => ["review", "creative"].includes(item.gradeKey)).sort((a, b) => b.cost - a.cost);
+      const highViewLowVisit = [...items]
+        .filter((item) => item.views >= getPromotionBenchmarks(items).avgViews && item.visitRate < getPromotionBenchmarks(items).avgVisitRate)
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 4);
+
+      dom.youtubeInsightSummary.innerHTML = `
+        <div class="analysis-card-grid">
+          <article class="analysis-card featured">
+            <h3>성과 요약</h3>
+            <h4>${formatCurrency(totals.cost)} · 방문 ${formatNumber(totals.visitors)}명</h4>
+            <p>조회수는 ${formatNumber(totals.views)}회, 조회 대비 방문율은 ${formatPercent(totals.averageVisitRate)}입니다. 방문당 비용은 보조 지표로만 참고합니다.</p>
+            <div class="metric-pairs">
+              <div class="metric-pair"><span>노출 → 조회</span><strong>${formatPercent(percent(totals.views, totals.impressions))}</strong></div>
+              <div class="metric-pair"><span>조회 → 방문</span><strong>${formatPercent(totals.averageVisitRate)}</strong></div>
+              <div class="metric-pair"><span>조회 → 구독</span><strong>${formatPercent(totals.averageSubscribeRate)}</strong></div>
+              <div class="metric-pair"><span>평균 CPV</span><strong>${formatUnitCurrency(totals.averageCpv)}</strong></div>
+            </div>
+          </article>
+          <article class="analysis-card">
+            <h3>좋은 흐름</h3>
+            <h4>${escapeHtml(best.name)}</h4>
+            <p>종합 점수 ${best.performanceScore}점. ${escapeHtml(best.gradeReason)}</p>
+            ${promotionListMarkup(coreItems.slice(0, 3), (item) => `${item.performanceScore}점`)}
+          </article>
+          <article class="analysis-card">
+            <h3>점검 필요</h3>
+            <h4>${reviewItems.length ? escapeHtml(reviewItems[0].name) : "뚜렷한 점검 후보 없음"}</h4>
+            <p>${reviewItems.length ? escapeHtml(reviewItems[0].gradeReason) : "현재 필터 기준에서는 큰 비용 낭비 신호가 강하지 않습니다."}</p>
+            ${promotionListMarkup(reviewItems.slice(0, 3), (item) => formatCurrency(item.cost))}
+          </article>
+          <article class="analysis-card">
+            <h3>조회는 있는데 방문이 약함</h3>
+            <h4>${highViewLowVisit.length ? escapeHtml(highViewLowVisit[0].name) : "후보 없음"}</h4>
+            <p>조회 이후 행동을 끌어내는 제목, CTA, 랜딩 연결을 우선 점검합니다.</p>
+            ${promotionListMarkup(highViewLowVisit, (item) => formatPercent(item.visitRate))}
+          </article>
+        </div>
+      `;
+    }
+
+    function budgetActionForPromotion(item) {
+      if (item.gradeKey === "insufficient") {
+        return { key: "hold", label: "판단 보류", reason: "데이터가 적어 예산 판단은 조금 더 지켜보는 편이 좋습니다." };
+      }
+      if (["core", "scale"].includes(item.gradeKey)) {
+        return { key: "up", label: "예산 증액 검토", reason: "조회와 방문 흐름이 좋아 예산 확대 테스트 후보입니다." };
+      }
+      if (["review", "creative"].includes(item.gradeKey)) {
+        return { key: "down", label: "예산 축소/점검", reason: "비용 대비 퍼널 흐름이 약해 소재 또는 타겟 점검 후 예산 조정이 필요합니다." };
+      }
+      return { key: "keep", label: "유지", reason: "성과가 평균권이라 급한 증액/축소보다는 유지 관찰이 적합합니다." };
+    }
+
+    function renderYoutubeBudgetJudgment(items) {
+      if (!dom.youtubeBudgetJudgment) return;
+      if (!items.length) {
+        dom.youtubeBudgetJudgment.innerHTML = emptyStateMarkup("예산 판단을 만들 데이터가 없습니다", "프로모션 데이터를 등록하면 예산 증액, 유지, 축소 후보가 정리됩니다.");
+        return;
+      }
+
+      const withActions = items.map((item) => ({ ...item, budgetAction: budgetActionForPromotion(item) }));
+      const groups = [
+        ["up", "예산 증액 검토", "방문율과 조회 흐름이 좋은 후보입니다."],
+        ["keep", "유지 후보", "성과가 평균권인 프로모션입니다."],
+        ["down", "축소/점검 후보", "비용 대비 흐름이 약한 후보입니다."],
+        ["hold", "판단 보류", "데이터가 더 필요한 항목입니다."]
+      ];
+
+      dom.youtubeBudgetJudgment.innerHTML = `
+        <div class="analysis-card-grid">
+          ${groups.map(([key, title, description]) => {
+            const groupItems = withActions.filter((item) => item.budgetAction.key === key).sort((a, b) => b.cost - a.cost).slice(0, 5);
+            return `
+              <article class="analysis-card">
+                <h3>${title}</h3>
+                <h4>${groupItems.length}개 프로모션</h4>
+                <p>${description}</p>
+                ${promotionListMarkup(groupItems, (item) => formatCurrency(item.cost))}
+              </article>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    function classifyCreativeMessage(text) {
+      const source = String(text || "");
+      const groups = [
+        { key: "profit", label: "수익 강조형", patterns: ["월", "순수익", "매출", "월천", "1000", "2000", "수익"] },
+        { key: "risk", label: "위기/문제 제기형", patterns: ["폐업", "불황", "망설", "고민", "현실", "파산", "레드오션"] },
+        { key: "case", label: "성공사례형", patterns: ["사장", "점장", "성공사례", "인터뷰", "매장", "호점"] },
+        { key: "easy", label: "쉬운 창업형", patterns: ["왕초보", "처음", "경험 없어도", "소자본", "1인", "가능"] }
+      ];
+      return groups.find((group) => group.patterns.some((pattern) => source.includes(pattern))) || { key: "general", label: "일반 메시지형" };
+    }
+
+    function renderYoutubeCreativeJudgment(items) {
+      if (!dom.youtubeCreativeJudgment) return;
+      if (!items.length) {
+        dom.youtubeCreativeJudgment.innerHTML = emptyStateMarkup("소재/문구 판단을 만들 데이터가 없습니다", "제목과 프로모션명이 쌓이면 문구 유형별 성과를 비교합니다.");
+        return;
+      }
+
+      const typed = items.map((item) => ({ ...item, messageType: classifyCreativeMessage(`${item.name} ${item.title} ${item.description}`) }));
+      const typeMap = new Map();
+      typed.forEach((item) => {
+        const key = item.messageType.key;
+        const current = typeMap.get(key) || { label: item.messageType.label, items: [] };
+        current.items.push(item);
+        typeMap.set(key, current);
+      });
+
+      const typeRows = [...typeMap.values()].map((group) => {
+        const totals = getTotals(group.items);
+        return {
+          ...group,
+          totals,
+          score: percent(totals.visitors, totals.views) + percent(totals.views, totals.impressions) * 0.25
+        };
+      }).sort((a, b) => b.score - a.score);
+      const bestType = typeRows[0];
+      const weakType = typeRows[typeRows.length - 1];
+
+      dom.youtubeCreativeJudgment.innerHTML = `
+        <div class="analysis-card-grid">
+          <article class="analysis-card featured">
+            <h3>문구 유형 요약</h3>
+            <h4>${escapeHtml(bestType.label)} 흐름 우세</h4>
+            <p>방문율과 조회 흐름을 함께 봤을 때 현재 필터에서는 ${escapeHtml(bestType.label)}이 가장 강합니다.</p>
+            ${promotionListMarkup(bestType.items.sort((a, b) => b.performanceScore - a.performanceScore).slice(0, 4), (item) => formatPercent(item.visitRate))}
+          </article>
+          <article class="analysis-card">
+            <h3>소재 점검 후보</h3>
+            <h4>${escapeHtml(weakType.label)}</h4>
+            <p>상대적으로 방문 전환이 낮은 문구 유형입니다. 제목의 약속과 랜딩 CTA 연결을 점검해볼 만합니다.</p>
+            ${promotionListMarkup(weakType.items.sort((a, b) => a.visitRate - b.visitRate).slice(0, 4), (item) => formatPercent(item.visitRate))}
+          </article>
+          <article class="analysis-card wide">
+            <h3>유형별 성과 비교</h3>
+            <div class="analysis-type-table">
+              ${typeRows.map((row) => `
+                <div>
+                  <strong>${escapeHtml(row.label)}</strong>
+                  <span>${row.items.length}개</span>
+                  <span>조회 ${formatNumber(row.totals.views)}</span>
+                  <span>방문율 ${formatPercent(row.totals.averageVisitRate)}</span>
+                  <span>구독 ${formatNumber(row.totals.subscribers)}</span>
+                </div>
+              `).join("")}
+            </div>
+          </article>
+        </div>
+      `;
+    }
+
+    function renderYoutubeAnalysis() {
+      if (!dom.youtubeInsightSummary || !isDashboardActive()) return;
+      const items = getFilteredPromotions();
+      const totals = getTotals(items);
+      renderYoutubeInsightSummary(items, totals);
+      renderYoutubeBudgetJudgment(items);
+      renderYoutubeCreativeJudgment(items);
+      switchYoutubeAnalysisTab(appState.youtubeInsightTab);
+    }
+
     function renderInsights() {
       const items = getFilteredPromotions();
       if (!items.length) {
@@ -1038,6 +1346,7 @@ dayjs.locale("ko");
       renderKpis();
       updateTable();
       updateFunnelChart();
+      renderYoutubeAnalysis();
     }
 
     function openPromotionModal(id = null) {
@@ -1715,6 +2024,12 @@ dayjs.locale("ko");
 
       dom.addPromotionBtn.addEventListener("click", () => openPromotionModal());
       dom.loadSampleBtn.addEventListener("click", loadSampleData);
+      if (dom.youtubeInsightTabs) {
+        dom.youtubeInsightTabs.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-youtube-analysis-tab]");
+          if (button) switchYoutubeAnalysisTab(button.dataset.youtubeAnalysisTab);
+        });
+      }
       dom.closePromotionModalBtn.addEventListener("click", closePromotionModal);
       dom.cancelPromotionBtn.addEventListener("click", closePromotionModal);
       dom.promotionForm.addEventListener("submit", handlePromotionSubmit);

@@ -949,6 +949,95 @@
       display: block;
     }
 
+    .analysis-tabs {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+      padding: 5px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface-2);
+    }
+
+    .analysis-panel {
+      display: none;
+    }
+
+    .analysis-panel.active {
+      display: block;
+    }
+
+    .analysis-card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .analysis-card {
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      min-height: 230px;
+      padding: 15px;
+      border: 1px solid var(--soft-line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .analysis-card.featured {
+      border-color: color-mix(in srgb, var(--youtube), var(--line) 38%);
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--youtube), transparent 92%), transparent 68%),
+        var(--surface);
+    }
+
+    .analysis-card.wide {
+      grid-column: 1 / -1;
+    }
+
+    .analysis-card h3 {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .analysis-card h4 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.28;
+    }
+
+    .analysis-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .analysis-type-table {
+      display: grid;
+      gap: 8px;
+    }
+
+    .analysis-type-table > div {
+      display: grid;
+      grid-template-columns: minmax(150px, 1.2fr) repeat(4, minmax(90px, 1fr));
+      gap: 8px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--soft-line);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .analysis-type-table strong {
+      color: var(--ink);
+      font-size: 13px;
+    }
+
     .paste-helper {
       display: grid;
       gap: 12px;
@@ -1219,6 +1308,35 @@
       color: var(--amber);
     }
 
+    .action-badge.grade-core,
+    .action-badge.grade-scale {
+      border-color: color-mix(in srgb, var(--green), var(--line) 40%);
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .action-badge.grade-maintain {
+      border-color: color-mix(in srgb, var(--blue), var(--line) 42%);
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .action-badge.grade-creative {
+      border-color: color-mix(in srgb, var(--amber), var(--line) 40%);
+      background: var(--amber-soft);
+      color: var(--amber);
+    }
+
+    .action-badge.grade-review {
+      border-color: color-mix(in srgb, var(--youtube), var(--line) 34%);
+      background: var(--red-soft);
+      color: var(--youtube);
+    }
+
+    .action-badge.grade-insufficient {
+      color: var(--muted);
+    }
+
     .naver-sa-pagination {
       display: flex;
       flex-wrap: wrap;
@@ -1292,7 +1410,16 @@
 
       .insight-grid,
       .creative-grid,
+      .analysis-card-grid,
       .analysis-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .analysis-card.wide {
+        grid-column: auto;
+      }
+
+      .analysis-type-table > div {
         grid-template-columns: 1fr;
       }
     }
