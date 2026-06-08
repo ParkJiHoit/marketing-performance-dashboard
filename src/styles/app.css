@@ -216,6 +216,12 @@
       display: block;
     }
 
+    .page,
+    .dashboard-grid,
+    .section {
+      min-width: 0;
+    }
+
     .hub-launcher {
       display: grid;
       align-content: center;
@@ -594,6 +600,9 @@
     }
 
     .table-wrap {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
       border: 1px solid var(--soft-line);
       border-radius: var(--radius);
       overflow-x: auto;
@@ -602,7 +611,9 @@
     }
 
     .tabulator {
+      width: 100%;
       min-width: 820px;
+      max-width: 100%;
       border: 0;
       background: var(--surface);
       color: var(--ink);

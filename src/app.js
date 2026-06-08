@@ -38,6 +38,8 @@ dayjs.locale("ko");
       pendingConfirm: null,
       table: null,
       charts: {},
+      dashboardLayoutTimers: [],
+      dashboardFontsQueued: false,
       filters: {
         search: "",
         status: "all",
@@ -215,6 +217,46 @@ dayjs.locale("ko");
       window.location.hash = route === "dashboard" ? "#youtube" : "#hub";
     }
 
+    function isDashboardActive() {
+      return dom.dashboardPage.classList.contains("active");
+    }
+
+    function syncDashboardLayout() {
+      if (!isDashboardActive()) return;
+
+      appState.dashboardLayoutTimers.forEach((timer) => clearTimeout(timer));
+      appState.dashboardLayoutTimers = [];
+
+      const sync = () => {
+        document.documentElement.scrollLeft = 0;
+        document.body.scrollLeft = 0;
+        document.querySelectorAll(".table-wrap").forEach((wrap) => {
+          wrap.scrollLeft = 0;
+        });
+        if (appState.table) appState.table.redraw(true);
+        Object.values(appState.charts).forEach((chart) => chart.resize());
+      };
+
+      requestAnimationFrame(() => {
+        sync();
+        requestAnimationFrame(sync);
+      });
+
+      [80, 180, 360].forEach((delay) => {
+        appState.dashboardLayoutTimers.push(setTimeout(sync, delay));
+      });
+    }
+
+    function ensureDashboardReady() {
+      if (!appState.table) initTable();
+      renderAll();
+      syncDashboardLayout();
+      if (!appState.dashboardFontsQueued && document.fonts && document.fonts.ready) {
+        appState.dashboardFontsQueued = true;
+        document.fonts.ready.then(syncDashboardLayout);
+      }
+    }
+
     function applyRoute() {
       const route = window.location.hash === "#youtube" ? "dashboard" : "hub";
       dom.hubPage.classList.toggle("active", route === "hub");
@@ -225,10 +267,7 @@ dayjs.locale("ko");
       dom.pageTitle.textContent = "성과 분석 대시보드";
       dom.pageSubtitle.textContent = route === "dashboard" ? "프로모션 성과 분석" : "채널별 성과 보기";
       if (route === "dashboard") {
-        setTimeout(() => {
-          if (appState.table) appState.table.redraw(true);
-          Object.values(appState.charts).forEach((chart) => chart.resize());
-        }, 60);
+        ensureDashboardReady();
       }
     }
 
@@ -236,7 +275,10 @@ dayjs.locale("ko");
       document.documentElement.dataset.theme = theme;
       dom.themeIcon.textContent = theme === "dark" ? "L" : "D";
       localStorage.setItem(STORAGE_KEYS.theme, theme);
-      updateFunnelChart();
+      if (isDashboardActive()) {
+        updateFunnelChart();
+        syncDashboardLayout();
+      }
     }
 
     function initTheme() {
@@ -802,7 +844,7 @@ dayjs.locale("ko");
     // 인사이트 영역은 마케터의 핵심 질문에 직접 답하도록 구성합니다.
     // 종합 추천, 방문율 TOP, 구독 전환 TOP, 비용 효율, 성과 순위, 이상치를 한 번에 제공합니다.
     function updateFunnelChart() {
-      if (!window.Chart || !document.getElementById("funnelChart")) return;
+      if (!window.Chart || !document.getElementById("funnelChart") || !isDashboardActive()) return;
       const colors = getChartColors();
       const totals = getTotals(getFilteredPromotions());
       const funnelLabels = ["노출수", "조회수", "방문자 수"];
@@ -1609,8 +1651,6 @@ dayjs.locale("ko");
       initTheme();
       loadPromotions();
       bindEvents();
-      initTable();
-      renderAll();
       applyRoute();
     }
 
