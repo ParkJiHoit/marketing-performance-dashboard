@@ -1,0 +1,11 @@
+{
+  "name": "marketing-performance-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server/naverSaApiServer.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
