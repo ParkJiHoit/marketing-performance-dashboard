@@ -17,6 +17,23 @@
       --amber: #f2a33a;
       --amber-soft: #fff6e6;
       --red-soft: #fff0f0;
+      --page-top: #fbfcfd;
+      --floating-surface: rgba(255, 255, 255, 0.86);
+      --floating-surface-soft: rgba(255, 255, 255, 0.72);
+      --field-surface: rgba(255, 255, 255, 0.92);
+      --button-hover: #fffafa;
+      --row-even: #fcfcfd;
+      --row-hover: #fff7f7;
+      --empty-surface: rgba(255, 255, 255, 0.68);
+      --panel-border: rgba(230, 233, 238, 0.86);
+      --panel-border-soft: rgba(230, 233, 238, 0.76);
+      --inset-surface: rgba(247, 248, 250, 0.72);
+      --kpi-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.9));
+      --good-card-surface: linear-gradient(180deg, #ffffff, var(--green-soft));
+      --warn-card-surface: linear-gradient(180deg, #ffffff, var(--amber-soft));
+      --danger-card-surface: linear-gradient(180deg, #ffffff, var(--red-soft));
+      --featured-surface: linear-gradient(180deg, #ffffff, color-mix(in srgb, var(--youtube), var(--surface) 94%));
+      --featured-surface-subtle: linear-gradient(180deg, #ffffff, color-mix(in srgb, var(--youtube), var(--surface) 96%));
       --shadow: 0 18px 50px rgba(25, 31, 40, 0.07);
       --shadow-soft: 0 10px 30px rgba(25, 31, 40, 0.045);
       --radius: 28px;
@@ -45,6 +62,23 @@
       --amber: #ffbf3f;
       --amber-soft: rgba(255, 191, 63, 0.14);
       --red-soft: rgba(255, 99, 99, 0.15);
+      --page-top: #111318;
+      --floating-surface: rgba(23, 25, 29, 0.88);
+      --floating-surface-soft: rgba(23, 25, 29, 0.68);
+      --field-surface: rgba(32, 35, 41, 0.94);
+      --button-hover: rgba(255, 125, 130, 0.12);
+      --row-even: #1b1e24;
+      --row-hover: rgba(255, 125, 130, 0.1);
+      --empty-surface: rgba(23, 25, 29, 0.66);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --panel-border-soft: rgba(255, 255, 255, 0.065);
+      --inset-surface: rgba(32, 35, 41, 0.72);
+      --kpi-surface: linear-gradient(180deg, rgba(31, 34, 40, 0.98), rgba(23, 25, 29, 0.92));
+      --good-card-surface: linear-gradient(180deg, rgba(31, 34, 40, 0.98), var(--green-soft));
+      --warn-card-surface: linear-gradient(180deg, rgba(31, 34, 40, 0.98), var(--amber-soft));
+      --danger-card-surface: linear-gradient(180deg, rgba(31, 34, 40, 0.98), var(--red-soft));
+      --featured-surface: linear-gradient(180deg, rgba(31, 34, 40, 0.98), color-mix(in srgb, var(--youtube), var(--surface) 90%));
+      --featured-surface-subtle: linear-gradient(180deg, rgba(31, 34, 40, 0.98), color-mix(in srgb, var(--youtube), var(--surface) 94%));
       --shadow: 0 24px 52px rgba(0, 0, 0, 0.3);
       --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.2);
     }
@@ -62,7 +96,7 @@
       min-height: 100vh;
       overflow-x: hidden;
       background:
-        linear-gradient(180deg, #fbfcfd 0%, var(--bg) 260px),
+        linear-gradient(180deg, var(--page-top) 0%, var(--bg) 260px),
         var(--bg);
       color: var(--ink);
       font-family: var(--font);
@@ -107,9 +141,9 @@
       gap: 16px;
       margin-bottom: 28px;
       padding: 14px 16px;
-      border: 1px solid rgba(230, 233, 238, 0.86);
+      border: 1px solid var(--panel-border);
       border-radius: 26px;
-      background: rgba(255, 255, 255, 0.86);
+      background: var(--floating-surface);
       backdrop-filter: blur(12px);
       box-shadow: var(--shadow-soft);
     }
@@ -206,7 +240,7 @@
     .btn:hover {
       transform: translateY(-1px);
       border-color: color-mix(in srgb, var(--youtube), var(--line) 58%);
-      background: #fffafa;
+      background: var(--button-hover);
       box-shadow: 0 8px 20px rgba(25, 31, 40, 0.055);
     }
 
@@ -447,9 +481,9 @@
       gap: 12px;
       flex-wrap: wrap;
       padding: 12px;
-      border: 1px solid rgba(230, 233, 238, 0.84);
+      border: 1px solid var(--panel-border);
       border-radius: 28px;
-      background: rgba(255, 255, 255, 0.72);
+      background: var(--floating-surface-soft);
       box-shadow: 0 8px 24px rgba(25, 31, 40, 0.035);
     }
 
@@ -493,7 +527,7 @@
       min-height: 44px;
       border: 1px solid var(--line);
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.92);
+      background: var(--field-surface);
       color: var(--ink);
       outline: none;
       transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
@@ -532,9 +566,9 @@
     .kpi-card {
       min-height: 140px;
       padding: 22px;
-      border: 1px solid rgba(230, 233, 238, 0.82);
+      border: 1px solid var(--panel-border);
       border-radius: 30px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.9));
+      background: var(--kpi-surface);
       text-align: left;
       box-shadow: var(--shadow-soft);
       transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
@@ -590,22 +624,22 @@
     .signal-card {
       min-height: 156px;
       padding: 18px;
-      border: 1px solid rgba(230, 233, 238, 0.8);
+      border: 1px solid var(--panel-border);
       border-radius: 26px;
       background: var(--surface);
       box-shadow: var(--shadow-soft);
     }
 
     .signal-card.good {
-      background: linear-gradient(180deg, #ffffff, var(--green-soft));
+      background: var(--good-card-surface);
     }
 
     .signal-card.warn {
-      background: linear-gradient(180deg, #ffffff, var(--amber-soft));
+      background: var(--warn-card-surface);
     }
 
     .signal-card.hot {
-      background: linear-gradient(180deg, #ffffff, var(--red-soft));
+      background: var(--danger-card-surface);
     }
 
     .signal-card h3 {
@@ -639,9 +673,9 @@
       gap: 10px;
       align-items: center;
       padding: 12px;
-      border: 1px solid rgba(230, 233, 238, 0.76);
+      border: 1px solid var(--panel-border-soft);
       border-radius: 18px;
-      background: rgba(247, 248, 250, 0.72);
+      background: var(--inset-surface);
     }
 
     .rank-index {
@@ -684,7 +718,7 @@
     .chart-card {
       min-height: 360px;
       padding: 24px;
-      border: 1px solid rgba(230, 233, 238, 0.82);
+      border: 1px solid var(--panel-border);
       border-radius: 30px;
       background: var(--surface);
       box-shadow: var(--shadow-soft);
@@ -717,7 +751,7 @@
       width: 100%;
       max-width: 100%;
       min-width: 0;
-      border: 1px solid rgba(230, 233, 238, 0.86);
+      border: 1px solid var(--panel-border);
       border-radius: 30px;
       overflow-x: auto;
       overflow-y: hidden;
@@ -760,11 +794,11 @@
     }
 
     .tabulator-row.tabulator-row-even {
-      background: #fcfcfd;
+      background: var(--row-even);
     }
 
     .tabulator-row:hover {
-      background: #fff7f7;
+      background: var(--row-hover);
     }
 
     .tabulator-row .tabulator-cell {
@@ -885,7 +919,7 @@
       gap: 12px;
       min-height: 230px;
       padding: 20px;
-      border: 1px solid rgba(230, 233, 238, 0.82);
+      border: 1px solid var(--panel-border);
       border-radius: 28px;
       background: var(--surface);
       box-shadow: var(--shadow-soft);
@@ -893,7 +927,7 @@
 
     .insight-card.featured {
       border-color: color-mix(in srgb, var(--youtube), var(--line) 60%);
-      background: linear-gradient(180deg, #ffffff, color-mix(in srgb, var(--youtube), var(--surface) 94%));
+      background: var(--featured-surface);
     }
 
     .insight-card h3,
@@ -928,9 +962,9 @@
 
     .metric-pair {
       padding: 12px;
-      border: 1px solid rgba(230, 233, 238, 0.76);
+      border: 1px solid var(--panel-border-soft);
       border-radius: 18px;
-      background: rgba(247, 248, 250, 0.72);
+      background: var(--inset-surface);
     }
 
     .metric-pair.primary {
@@ -960,7 +994,7 @@
       padding: 28px;
       border: 1px dashed var(--line);
       border-radius: var(--radius);
-      background: rgba(255, 255, 255, 0.68);
+      background: var(--empty-surface);
       text-align: center;
     }
 
@@ -1070,9 +1104,9 @@
       gap: 7px;
       margin-bottom: 18px;
       padding: 7px;
-      border: 1px solid rgba(230, 233, 238, 0.86);
+      border: 1px solid var(--panel-border);
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.76);
+      background: var(--floating-surface-soft);
       box-shadow: var(--shadow-soft);
     }
 
@@ -1108,7 +1142,7 @@
       gap: 14px;
       min-height: 0;
       padding: 22px;
-      border: 1px solid rgba(230, 233, 238, 0.82);
+      border: 1px solid var(--panel-border);
       border-radius: 30px;
       background: var(--surface);
       overflow: hidden;
@@ -1128,7 +1162,7 @@
     .analysis-card.featured {
       grid-column: span 7;
       border-color: color-mix(in srgb, var(--youtube), var(--line) 60%);
-      background: linear-gradient(180deg, #ffffff, color-mix(in srgb, var(--youtube), var(--surface) 96%));
+      background: var(--featured-surface-subtle);
     }
 
     .analysis-card.featured + .analysis-card {
@@ -1189,15 +1223,15 @@
       gap: 10px;
       align-items: center;
       padding: 12px;
-      border: 1px solid rgba(230, 233, 238, 0.76);
+      border: 1px solid var(--panel-border-soft);
       border-radius: 20px;
-      background: rgba(247, 248, 250, 0.72);
+      background: var(--inset-surface);
       transition: border-color 0.18s ease, background 0.18s ease;
     }
 
     .decision-row:hover {
       border-color: color-mix(in srgb, var(--youtube), var(--line) 60%);
-      background: #fffafa;
+      background: var(--button-hover);
     }
 
     .decision-main {
@@ -1244,9 +1278,9 @@
       gap: 8px;
       align-items: center;
       padding: 12px;
-      border: 1px solid rgba(230, 233, 238, 0.76);
+      border: 1px solid var(--panel-border-soft);
       border-radius: 20px;
-      background: rgba(247, 248, 250, 0.72);
+      background: var(--inset-surface);
       color: var(--muted);
       font-size: 12px;
     }
@@ -1388,9 +1422,9 @@
       gap: 6px;
       margin-bottom: 16px;
       padding: 7px;
-      border: 1px solid rgba(230, 233, 238, 0.86);
+      border: 1px solid var(--panel-border);
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.76);
+      background: var(--floating-surface-soft);
       box-shadow: var(--shadow-soft);
       overflow-x: auto;
     }
