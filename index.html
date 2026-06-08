@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Studio 마케팅 성과 대시보드</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans/packages/wanted-sans/fonts/webfonts/static/complete/WantedSans.min.css" />
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/tabulator-tables@6.3.1/dist/css/tabulator_semanticui.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@6.3.1/dist/js/tabulator.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.13/dayjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.13/locale/ko.js"></script>
+  <link rel="stylesheet" href="src/styles/app.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <img src="assets/brand/yeopcoupon-logo.png" alt="" />
+        </div>
+        <div>
+          <h1 id="pageTitle">성과 분석 대시보드</h1>
+          <p id="pageSubtitle">채널별 성과 보기</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button id="backToHubBtn" class="btn btn-ghost" type="button" hidden>채널</button>
+        <button id="loadSampleBtn" class="btn" type="button" hidden>샘플 데이터</button>
+        <button id="addPromotionBtn" class="btn btn-primary" type="button" hidden>프로모션 등록</button>
+        <button id="themeToggleBtn" class="btn btn-icon" type="button" title="다크모드 전환" aria-label="다크모드 전환">
+          <span class="icon" id="themeIcon">D</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section id="hubPage" class="page active" aria-labelledby="hubTitle">
+        <div class="hub-launcher">
+          <h2 id="hubTitle" class="launcher-title">채널을 선택하세요</h2>
+        <div class="channel-grid" aria-label="채널 선택">
+          <article class="channel-card active-channel" id="youtubeChannelCard" tabindex="0" role="button" aria-label="YouTube Studio 성과 대시보드로 이동">
+            <span class="channel-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.6 7.1a3 3 0 0 0-2.1-2.1C17.6 4.5 12 4.5 12 4.5s-5.6 0-7.5.5a3 3 0 0 0-2.1 2.1A31 31 0 0 0 2 12a31 31 0 0 0 .4 4.9 3 3 0 0 0 2.1 2.1c1.9.5 7.5.5 7.5.5s5.6 0 7.5-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 22 12a31 31 0 0 0-.4-4.9ZM10 15.5v-7l6 3.5-6 3.5Z"/></svg>
+            </span>
+            <h3>YouTube Studio</h3>
+          </article>
+          <article class="channel-card disabled">
+            <span class="channel-icon" aria-hidden="true" style="color:#19a36f;">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M5 18V6h4.2l5.6 8.2V6H19v12h-4.2L9.2 9.8V18H5Z" fill="currentColor"/></svg>
+            </span>
+            <h3>Naver Ads</h3>
+          </article>
+          <article class="channel-card disabled">
+            <span class="channel-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M21.6 12.2c0-.7-.1-1.3-.2-1.9H12v3.8h5.4a4.7 4.7 0 0 1-2 3.1v2.6h3.2c1.9-1.8 3-4.4 3-7.6Z" fill="#4285F4"/>
+                <path d="M12 22c2.7 0 5-0.9 6.6-2.4l-3.2-2.6c-.9.6-2 .9-3.4.9-2.6 0-4.8-1.8-5.6-4.1H3.1v2.7A10 10 0 0 0 12 22Z" fill="#34A853"/>
+                <path d="M6.4 13.8a6 6 0 0 1 0-3.6V7.5H3.1a10 10 0 0 0 0 9l3.3-2.7Z" fill="#FBBC05"/>
+                <path d="M12 6.1c1.5 0 2.8.5 3.8 1.5l2.9-2.9A9.7 9.7 0 0 0 12 2 10 10 0 0 0 3.1 7.5l3.3 2.7C7.2 7.8 9.4 6.1 12 6.1Z" fill="#EA4335"/>
+              </svg>
+            </span>
+            <h3>Google Ads</h3>
+          </article>
+          <article class="channel-card disabled">
+            <span class="channel-icon" aria-hidden="true" style="color:#1877f2;">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 17.8c0-3.6 2-9.5 6-9.5 2.3 0 3.5 1.5 4.3 2.7.8-1.5 1.9-2.7 3.7-2.7 3.1 0 4.8 3.4 4.8 7 0 2.7-1.1 4.7-3.3 4.7-1.9 0-3.1-1.2-5.1-4.7l-.6-1.1-.7 1.1C10.9 18.8 9.6 20 7.6 20 5.3 20 4 18.9 4 17.8Zm2.4-.1c0 .7.5 1.2 1.3 1.2 1.2 0 2-.8 3.8-3.8l1-1.7c-1.2-1.9-2-2.8-3.4-2.8-2 0-3.7 4.3-3.7 7.1Zm9.5-4.4.8 1.4c1.7 2.9 2.4 4.1 3.6 4.1.8 0 1.2-.7 1.2-2.7 0-2.5-1-5.4-2.7-5.4-1 0-1.7.8-2.9 2.6Z"/></svg>
+            </span>
+            <h3>Meta Ads</h3>
+          </article>
+        </div>
+        </div>
+      </section>
+
+      <section id="dashboardPage" class="page" aria-labelledby="dashboardTitle">
+        <div class="dashboard-grid">
+          <section class="section">
+            <div class="section-header">
+              <div>
+                <h2 id="dashboardTitle" class="section-title">YouTube Studio 성과 대시보드</h2>
+                <p class="section-subtitle">데이터 입력, 성과 확인, 인사이트 확인 흐름으로 운영됩니다.</p>
+              </div>
+            </div>
+            <div id="kpiGrid" class="kpi-grid"></div>
+          </section>
+
+          <section class="section">
+            <div class="section-header">
+              <div>
+                <h2 class="section-title">성과 테이블</h2>
+                <p class="section-subtitle">프로모션별 핵심 성과를 검색하고 정렬합니다.</p>
+              </div>
+              <div class="control-cluster">
+                <button id="resetDataBtn" class="btn btn-danger" type="button">전체 초기화</button>
+              </div>
+            </div>
+            <div class="toolbar" style="margin-bottom: 12px;">
+              <div class="control-cluster">
+                <input id="tableSearchInput" class="field search-field" type="search" placeholder="프로모션명, 제목, 설명 검색" />
+                <select id="statusFilterSelect" class="select" aria-label="상태 필터">
+                  <option value="all">전체 상태</option>
+                  <option value="active">진행중</option>
+                  <option value="completed">완료</option>
+                  <option value="paused">일시중지</option>
+                  <option value="draft">초안</option>
+                </select>
+                <select id="goalFilterSelect" class="select" aria-label="목표 필터">
+                  <option value="all">전체 목표</option>
+                  <option value="awareness">인지</option>
+                  <option value="traffic">방문</option>
+                  <option value="subscriber">구독</option>
+                  <option value="conversion">전환</option>
+                </select>
+              </div>
+              <div class="control-cluster">
+                <button id="exportCsvBtn" class="btn" type="button">CSV 내보내기</button>
+                <button id="importCsvBtn" class="btn" type="button">CSV 가져오기</button>
+                <input id="csvFileInput" class="hidden-input" type="file" accept=".csv,text/csv" />
+              </div>
+            </div>
+            <div class="table-wrap">
+              <div id="promotionsTable"></div>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-header">
+              <div>
+                <h2 class="section-title">전체 퍼널</h2>
+                <p class="section-subtitle">노출수에서 조회수, 방문자 수까지 전체 흐름을 확인합니다.</p>
+              </div>
+            </div>
+            <article class="chart-card wide">
+              <h3>노출수 → 조회수 → 방문자 수</h3>
+              <p>각 단계의 전환 흐름과 이탈 규모를 봅니다.</p>
+              <div class="chart-box"><canvas id="funnelChart"></canvas></div>
+            </article>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="promotionModalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="promotionModalTitle">
+    <section class="modal">
+      <div class="modal-head">
+        <h2 id="promotionModalTitle">프로모션 등록</h2>
+        <button class="btn btn-icon" id="closePromotionModalBtn" type="button" aria-label="닫기">X</button>
+      </div>
+      <form id="promotionForm">
+        <div class="modal-tabs" id="promotionTabs" role="tablist" aria-label="프로모션 입력 방식">
+          <button class="tab-btn active" type="button" data-promotion-tab="direct">직접 입력</button>
+          <button class="tab-btn" type="button" data-promotion-tab="paste">복붙 입력</button>
+        </div>
+        <div class="modal-body">
+          <div id="directEntryPanel" class="tab-panel active">
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="promotionName">프로모션명</label>
+              <input id="promotionName" name="name" class="field" required />
+            </div>
+            <div class="form-field">
+              <label for="promotionStatus">상태</label>
+              <select id="promotionStatus" name="status" class="select">
+                <option value="active">진행중</option>
+                <option value="completed">완료</option>
+                <option value="paused">일시중지</option>
+                <option value="draft">초안</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="promotionGoal">목표</label>
+              <select id="promotionGoal" name="goal" class="select">
+                <option value="traffic">방문</option>
+                <option value="subscriber">구독</option>
+                <option value="awareness">인지</option>
+                <option value="conversion">전환</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="promotionCreatedAt">생성일</label>
+              <input id="promotionCreatedAt" name="createdAt" class="field" type="date" required />
+            </div>
+            <div class="form-field full">
+              <label for="promotionTitle">제목</label>
+              <input id="promotionTitle" name="title" class="field" required />
+            </div>
+            <div class="form-field full">
+              <label for="promotionDescription">설명</label>
+              <textarea id="promotionDescription" name="description" class="textarea" required></textarea>
+            </div>
+            <div class="form-field full">
+              <label for="promotionVideoUrl">영상 URL</label>
+              <input id="promotionVideoUrl" name="videoUrl" class="field" type="url" placeholder="https://youtube.com/..." />
+            </div>
+            <div class="form-divider">성과 정보</div>
+            <div class="form-field">
+              <label for="promotionCost">비용</label>
+              <input id="promotionCost" name="cost" class="field" type="number" min="0" step="1" value="0" />
+            </div>
+            <div class="form-field">
+              <label for="promotionImpressions">노출수</label>
+              <input id="promotionImpressions" name="impressions" class="field" type="number" min="0" step="1" value="0" />
+            </div>
+            <div class="form-field">
+              <label for="promotionViews">조회수</label>
+              <input id="promotionViews" name="views" class="field" type="number" min="0" step="1" value="0" />
+            </div>
+            <div class="form-field">
+              <label for="promotionSubscribers">구독자 수</label>
+              <input id="promotionSubscribers" name="subscribers" class="field" type="number" min="0" step="1" value="0" />
+            </div>
+            <div class="form-field">
+              <label for="promotionVisitors">웹사이트 방문자 수</label>
+              <input id="promotionVisitors" name="visitors" class="field" type="number" min="0" step="1" value="0" />
+            </div>
+          </div>
+          </div>
+          <div id="pasteEntryPanel" class="tab-panel">
+            <div class="paste-helper">
+              <p class="paste-note">유튜브 스튜디오 프로모션 목록에서 복사한 텍스트를 그대로 붙여넣으세요. 같은 프로모션명과 생성일이 있으면 기존 데이터를 업데이트하고, 없으면 새로 추가합니다.</p>
+              <textarea id="studioPasteInput" class="textarea" rows="14" placeholder="프로모션&#10;상태&#10;목표&#10;생성일&#10;비용&#10;노출수&#10;조회수&#10;구독자 수&#10;웹사이트 방문&#10;6:28&#10;레드오션에서도 살아남는 매장의 비밀&#10;활성&#10;웹사이트 방문&#10;2026. 6. 2.&#10;$81.7169,6558,77101,870"></textarea>
+              <div id="pastePreview" class="paste-preview">붙여넣은 내용을 자동으로 분석합니다.</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn" id="cancelPromotionBtn" type="button">취소</button>
+          <button class="btn btn-primary" id="savePromotionBtn" type="submit">저장</button>
+          <button class="btn btn-primary" id="importPasteBtn" type="button" hidden>붙여넣기 반영</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="confirmModalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <section class="modal small">
+      <div class="modal-head">
+        <h2 id="confirmTitle">확인</h2>
+      </div>
+      <div class="modal-body">
+        <p id="confirmMessage" style="margin:0; color:var(--muted); line-height:1.7;"></p>
+      </div>
+      <div class="modal-foot">
+        <button id="confirmCancelBtn" class="btn" type="button">취소</button>
+        <button id="confirmOkBtn" class="btn btn-danger" type="button">확인</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="metricDetailModalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="metricDetailTitle">
+    <section class="modal">
+      <div class="modal-head">
+        <h2 id="metricDetailTitle">핵심 지표 전체보기</h2>
+        <button class="btn btn-icon" id="closeMetricDetailBtn" type="button" aria-label="닫기">X</button>
+      </div>
+      <div class="modal-body">
+        <div id="metricDetailBody" class="detail-table"></div>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="src/app.js"></script>
+</body>
+</html>
