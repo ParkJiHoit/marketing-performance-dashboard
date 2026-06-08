@@ -1119,13 +1119,13 @@ dayjs.locale("ko");
       return String(line || "").replace(/\s+/g, " ").trim();
     }
 
-    function stripStudioPreviewImageLabel(line) {
-      return cleanStudioLine(line).replace(/^(?:동영상\s*)?미리보기\s*이미지\s*:\s*/i, "").trim();
+    function isStudioPreviewImageLine(line) {
+      return /^(?:동영상\s*)?미리보기\s*이미지\s*:/i.test(cleanStudioLine(line));
     }
 
     function normalizeStudioPasteLine(line) {
       const cleaned = cleanStudioLine(line);
-      return stripStudioPreviewImageLabel(cleaned);
+      return isStudioPreviewImageLine(cleaned) ? "" : cleaned;
     }
 
     function isDurationLine(line) {
@@ -1251,7 +1251,7 @@ dayjs.locale("ko");
       const tableRecords = parseStudioTableRecords(lines);
       const titleIndexes = rawLines
         .map((line, index) => ({ line, index }))
-        .filter(({ line }) => /^(?:동영상\s*)?미리보기\s*이미지\s*:/i.test(line))
+        .filter(({ line }) => isStudioPreviewImageLine(line))
         .map(({ index }) => index);
 
       if (!titleIndexes.length) return tableRecords;
@@ -1311,8 +1311,11 @@ dayjs.locale("ko");
     }
 
     function parseStudioRecord(recordLines) {
-      const titleRaw = recordLines.find((line) => !isDurationLine(line) && !isStudioHeaderLine(line) && !isStudioStatusLine(line) && !isStudioGoalLine(line) && !isStudioDate(line)) || "";
-      const title = stripStudioPreviewImageLabel(titleRaw);
+      const durationIndex = recordLines.findIndex(isDurationLine);
+      const titleRaw = durationIndex >= 0
+        ? recordLines.slice(durationIndex + 1).find((line) => line && !isStudioHeaderLine(line) && !isStudioStatusLine(line) && !isStudioGoalLine(line) && !isStudioDate(line))
+        : recordLines.find((line) => !isStudioHeaderLine(line) && !isStudioStatusLine(line) && !isStudioGoalLine(line) && !isStudioDate(line));
+      const title = titleRaw || "";
       const body = recordLines
         .slice(recordLines.indexOf(titleRaw) + 1)
         .map(normalizeStudioPasteLine)
