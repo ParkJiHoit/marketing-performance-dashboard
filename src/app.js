@@ -167,6 +167,7 @@ dayjs.locale("ko");
         cpv: divide(cost, views),
         cpm: divide(cost, impressions) * 1000,
         viewRate: percent(views, impressions),
+        impressionVisitRate: percent(visitors, impressions),
         visitRate: percent(visitors, views),
         costPerVisitor: divide(cost, visitors),
         subscribeRate: percent(subscribers, views)
@@ -190,6 +191,7 @@ dayjs.locale("ko");
         cpv: metrics.cpv,
         cpm: metrics.cpm,
         viewRate: metrics.viewRate,
+        impressionVisitRate: metrics.impressionVisitRate,
         visitRate: metrics.visitRate,
         costPerVisitor: metrics.costPerVisitor,
         subscribeRate: metrics.subscribeRate
@@ -198,13 +200,26 @@ dayjs.locale("ko");
 
     function getPromotionBenchmarks(items) {
       const active = items.filter((item) => item.views > 0 || item.impressions > 0 || item.visitors > 0);
+      const visitRates = active.map((item) => item.visitRate).filter(Number.isFinite);
+      const viewRates = active.map((item) => item.viewRate).filter(Number.isFinite);
+      const impressionVisitRates = active.map((item) => item.impressionVisitRate).filter(Number.isFinite);
+      const visitors = active.map((item) => item.visitors).filter(Number.isFinite);
+      const views = active.map((item) => item.views).filter(Number.isFinite);
       return {
         avgCost: divide(active.reduce((sum, item) => sum + item.cost, 0), active.length),
         avgViews: divide(active.reduce((sum, item) => sum + item.views, 0), active.length),
         avgVisitors: divide(active.reduce((sum, item) => sum + item.visitors, 0), active.length),
         avgViewRate: percent(active.reduce((sum, item) => sum + item.views, 0), active.reduce((sum, item) => sum + item.impressions, 0)),
+        avgImpressionVisitRate: percent(active.reduce((sum, item) => sum + item.visitors, 0), active.reduce((sum, item) => sum + item.impressions, 0)),
         avgVisitRate: percent(active.reduce((sum, item) => sum + item.visitors, 0), active.reduce((sum, item) => sum + item.views, 0)),
-        avgSubscribeRate: percent(active.reduce((sum, item) => sum + item.subscribers, 0), active.reduce((sum, item) => sum + item.views, 0)),
+        medianViews: median(views),
+        medianVisitors: median(visitors),
+        medianViewRate: median(viewRates),
+        medianVisitRate: median(visitRates),
+        medianImpressionVisitRate: median(impressionVisitRates),
+        p75VisitRate: percentile(visitRates, 0.75),
+        p75ViewRate: percentile(viewRates, 0.75),
+        p75ImpressionVisitRate: percentile(impressionVisitRates, 0.75),
         medianCpv: median(active.map((item) => item.cpv).filter((value) => value > 0)),
         medianCostPerVisitor: median(active.map((item) => item.costPerVisitor).filter((value) => value > 0))
       };
@@ -219,28 +234,30 @@ dayjs.locale("ko");
         };
       }
 
-      const strongVisit = benchmarks.avgVisitRate > 0 && item.visitRate >= benchmarks.avgVisitRate * 1.12;
-      const strongView = benchmarks.avgViewRate > 0 && item.viewRate >= benchmarks.avgViewRate * 1.08;
-      const strongSubscribe = item.subscribers > 0 && item.subscribeRate >= Math.max(benchmarks.avgSubscribeRate, 0.01);
-      const efficientCpv = item.cpv > 0 && (!benchmarks.medianCpv || item.cpv <= benchmarks.medianCpv * 1.08);
+      const strongVisit = benchmarks.p75VisitRate > 0 && item.visitRate >= benchmarks.p75VisitRate;
+      const healthyVisit = benchmarks.medianVisitRate > 0 && item.visitRate >= benchmarks.medianVisitRate * 1.08;
+      const weakVisit = benchmarks.medianVisitRate > 0 && item.visitRate < benchmarks.medianVisitRate * 0.88;
+      const strongView = benchmarks.medianViewRate > 0 && item.viewRate >= benchmarks.medianViewRate;
+      const strongImpressionVisit = benchmarks.p75ImpressionVisitRate > 0 && item.impressionVisitRate >= benchmarks.p75ImpressionVisitRate;
+      const enoughVisitors = benchmarks.medianVisitors > 0 && item.visitors >= benchmarks.medianVisitors;
+      const efficientCpv = item.cpv > 0 && (!benchmarks.medianCpv || item.cpv <= benchmarks.medianCpv * 1.15);
       const costly = benchmarks.avgCost > 0 && item.cost >= benchmarks.avgCost * 1.15;
-      const weakVisit = benchmarks.avgVisitRate > 0 && item.visitRate <= benchmarks.avgVisitRate * 0.75;
-      const weakView = benchmarks.avgViewRate > 0 && item.viewRate <= benchmarks.avgViewRate * 0.75;
+      const weakView = benchmarks.medianViewRate > 0 && item.viewRate < benchmarks.medianViewRate * 0.75;
       const highVisitorCost = item.costPerVisitor > 0 && benchmarks.medianCostPerVisitor > 0 && item.costPerVisitor >= benchmarks.medianCostPerVisitor * 1.35;
 
-      if (strongVisit && strongView && efficientCpv) {
+      if (strongVisit && strongView && enoughVisitors && efficientCpv) {
         return {
           key: "core",
           label: "핵심 프로모션",
-          reason: "조회 흐름과 방문 전환이 모두 평균 이상입니다."
+          reason: "조회 후 방문 전환이 상위권이고 조회 흐름도 안정적입니다."
         };
       }
 
-      if ((strongVisit || strongSubscribe) && efficientCpv) {
+      if ((strongVisit || (healthyVisit && strongImpressionVisit)) && enoughVisitors && efficientCpv) {
         return {
           key: "scale",
           label: "확대 후보",
-          reason: "성과 흐름이 양호해 예산 확대를 검토할 수 있습니다."
+          reason: "조회에서 방문으로 이어지는 흐름이 좋아 예산 확대를 검토할 수 있습니다."
         };
       }
 
@@ -248,15 +265,15 @@ dayjs.locale("ko");
         return {
           key: "review",
           label: "점검 필요",
-          reason: "비용 규모 대비 조회 또는 방문 흐름이 약합니다."
+          reason: "비용 규모 대비 조회 또는 방문 전환 흐름이 약합니다."
         };
       }
 
-      if (item.views >= benchmarks.avgViews * 1.1 && weakVisit) {
+      if (item.views >= benchmarks.medianViews * 1.1 && weakVisit) {
         return {
           key: "creative",
-          label: "소재 점검",
-          reason: "조회는 발생하지만 방문 전환이 약합니다."
+          label: "조회-방문 약함",
+          reason: "조회는 발생하지만 웹사이트 방문으로 충분히 이어지지 않습니다."
         };
       }
 
@@ -437,8 +454,9 @@ dayjs.locale("ko");
       if (!items.length) return [];
       const values = {
         viewRate: items.map((item) => item.viewRate),
+        impressionVisitRate: items.map((item) => item.impressionVisitRate),
         visitRate: items.map((item) => item.visitRate),
-        subscribeRate: items.map((item) => item.subscribeRate),
+        visitors: items.map((item) => item.visitors),
         costPerVisitor: items.map((item) => item.costPerVisitor).filter((value) => value > 0),
         cpv: items.map((item) => item.cpv).filter((value) => value > 0)
       };
@@ -450,8 +468,9 @@ dayjs.locale("ko");
 
       const ranges = {
         viewRate: minMax(values.viewRate),
+        impressionVisitRate: minMax(values.impressionVisitRate),
         visitRate: minMax(values.visitRate),
-        subscribeRate: minMax(values.subscribeRate),
+        visitors: minMax(values.visitors),
         costPerVisitor: minMax(values.costPerVisitor.length ? values.costPerVisitor : [0]),
         cpv: minMax(values.cpv.length ? values.cpv : [0])
       };
@@ -464,11 +483,12 @@ dayjs.locale("ko");
 
       return items.map((item) => {
         const score =
-          normalizeHigh(item.visitRate, ranges.visitRate) * 38 +
-          normalizeHigh(item.viewRate, ranges.viewRate) * 24 +
-          normalizeHigh(item.subscribeRate, ranges.subscribeRate) * 20 +
-          normalizeLow(item.cpv, ranges.cpv) * 10 +
-          normalizeLow(item.costPerVisitor, ranges.costPerVisitor) * 8;
+          normalizeHigh(item.visitRate, ranges.visitRate) * 55 +
+          normalizeHigh(item.impressionVisitRate, ranges.impressionVisitRate) * 15 +
+          normalizeHigh(item.viewRate, ranges.viewRate) * 12 +
+          normalizeHigh(item.visitors, ranges.visitors) * 10 +
+          normalizeLow(item.cpv, ranges.cpv) * 5 +
+          normalizeLow(item.costPerVisitor, ranges.costPerVisitor) * 3;
 
         return {
           ...item,
@@ -482,6 +502,13 @@ dayjs.locale("ko");
       if (!sorted.length) return 0;
       const middle = Math.floor(sorted.length / 2);
       return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+    }
+
+    function percentile(list, ratio) {
+      const sorted = list.filter(Number.isFinite).sort((a, b) => a - b);
+      if (!sorted.length) return 0;
+      const index = Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * ratio) - 1));
+      return sorted[index];
     }
 
     // 이상치 탐지는 중앙값 기반의 가벼운 규칙으로 처리합니다.
@@ -1028,15 +1055,16 @@ dayjs.locale("ko");
     function promotionListMarkup(items, valueFormatter) {
       if (!items.length) return `<p>현재 필터 기준으로 표시할 항목이 없습니다.</p>`;
       return `
-        <div class="rank-list">
+        <div class="decision-list">
           ${items.map((item, index) => `
-            <div class="rank-row">
+            <div class="decision-row">
               <span class="rank-index">${index + 1}</span>
-              <span class="rank-main">
+              <span class="decision-main">
                 <strong>${escapeHtml(item.name)}</strong>
-                <span>${escapeHtml(item.gradeLabel)} · ${escapeHtml(item.gradeReason)}</span>
+                <span>조회→방문 ${formatPercent(item.visitRate)} · 노출→조회 ${formatPercent(item.viewRate)} · CPV ${formatUnitCurrency(item.cpv)}</span>
               </span>
-              <span class="rank-score">${valueFormatter(item)}</span>
+              <span class="action-badge grade-${item.gradeKey}">${escapeHtml(item.gradeLabel)}</span>
+              <span class="decision-score">${valueFormatter(item)}</span>
             </div>
           `).join("")}
         </div>
@@ -1052,42 +1080,43 @@ dayjs.locale("ko");
 
       const scored = scorePromotions(items);
       const best = scored[0];
+      const benchmarks = getPromotionBenchmarks(items);
       const coreItems = items.filter((item) => ["core", "scale"].includes(item.gradeKey)).sort((a, b) => b.performanceScore - a.performanceScore);
       const reviewItems = items.filter((item) => ["review", "creative"].includes(item.gradeKey)).sort((a, b) => b.cost - a.cost);
       const highViewLowVisit = [...items]
-        .filter((item) => item.views >= getPromotionBenchmarks(items).avgViews && item.visitRate < getPromotionBenchmarks(items).avgVisitRate)
+        .filter((item) => item.views >= benchmarks.medianViews && item.visitRate < benchmarks.medianVisitRate)
         .sort((a, b) => b.views - a.views)
         .slice(0, 4);
 
       dom.youtubeInsightSummary.innerHTML = `
         <div class="analysis-card-grid">
           <article class="analysis-card featured">
-            <h3>성과 요약</h3>
-            <h4>${formatCurrency(totals.cost)} · 방문 ${formatNumber(totals.visitors)}명</h4>
-            <p>조회수는 ${formatNumber(totals.views)}회, 조회 대비 방문율은 ${formatPercent(totals.averageVisitRate)}입니다. 방문당 비용은 보조 지표로만 참고합니다.</p>
+            <h3>핵심 퍼널</h3>
+            <h4>조회 → 방문 ${formatPercent(totals.averageVisitRate)}</h4>
+            <p>총 비용 ${formatCurrency(totals.cost)}, 조회 ${formatNumber(totals.views)}회, 웹사이트 방문 ${formatNumber(totals.visitors)}명입니다. 확대 판단은 조회 후 방문 전환을 최우선으로 봅니다.</p>
             <div class="metric-pairs">
+              <div class="metric-pair primary"><span>조회 → 방문</span><strong>${formatPercent(totals.averageVisitRate)}</strong></div>
+              <div class="metric-pair"><span>노출 → 방문</span><strong>${formatPercent(percent(totals.visitors, totals.impressions))}</strong></div>
               <div class="metric-pair"><span>노출 → 조회</span><strong>${formatPercent(percent(totals.views, totals.impressions))}</strong></div>
-              <div class="metric-pair"><span>조회 → 방문</span><strong>${formatPercent(totals.averageVisitRate)}</strong></div>
-              <div class="metric-pair"><span>조회 → 구독</span><strong>${formatPercent(totals.averageSubscribeRate)}</strong></div>
               <div class="metric-pair"><span>평균 CPV</span><strong>${formatUnitCurrency(totals.averageCpv)}</strong></div>
             </div>
           </article>
-          <article class="analysis-card">
-            <h3>좋은 흐름</h3>
-            <h4>${escapeHtml(best.name)}</h4>
-            <p>종합 점수 ${best.performanceScore}점. ${escapeHtml(best.gradeReason)}</p>
-            ${promotionListMarkup(coreItems.slice(0, 3), (item) => `${item.performanceScore}점`)}
+          <article class="analysis-card positive">
+            <h3>확대 가능한 흐름</h3>
+            <h4>${coreItems.length ? escapeHtml(coreItems[0].name) : "상위 방문 전환 후보 없음"}</h4>
+            <p>${coreItems.length ? escapeHtml(coreItems[0].gradeReason) : "조회→방문 전환이 상위권인 소재가 아직 뚜렷하지 않습니다."}</p>
+            ${promotionListMarkup(coreItems.slice(0, 4), (item) => `${item.performanceScore}점`)}
           </article>
-          <article class="analysis-card">
-            <h3>점검 필요</h3>
+          <article class="analysis-card warning">
+            <h3>예산/소재 점검</h3>
             <h4>${reviewItems.length ? escapeHtml(reviewItems[0].name) : "뚜렷한 점검 후보 없음"}</h4>
             <p>${reviewItems.length ? escapeHtml(reviewItems[0].gradeReason) : "현재 필터 기준에서는 큰 비용 낭비 신호가 강하지 않습니다."}</p>
-            ${promotionListMarkup(reviewItems.slice(0, 3), (item) => formatCurrency(item.cost))}
+            ${promotionListMarkup(reviewItems.slice(0, 4), (item) => formatCurrency(item.cost))}
           </article>
-          <article class="analysis-card">
+          <article class="analysis-card danger">
             <h3>조회는 있는데 방문이 약함</h3>
             <h4>${highViewLowVisit.length ? escapeHtml(highViewLowVisit[0].name) : "후보 없음"}</h4>
-            <p>조회 이후 행동을 끌어내는 제목, CTA, 랜딩 연결을 우선 점검합니다.</p>
+            <p>조회는 만들지만 웹사이트 방문으로 충분히 이어지지 않는 소재입니다. 제목의 약속, CTA, 랜딩 연결을 우선 점검합니다.</p>
             ${promotionListMarkup(highViewLowVisit, (item) => formatPercent(item.visitRate))}
           </article>
         </div>
@@ -1099,10 +1128,10 @@ dayjs.locale("ko");
         return { key: "hold", label: "판단 보류", reason: "데이터가 적어 예산 판단은 조금 더 지켜보는 편이 좋습니다." };
       }
       if (["core", "scale"].includes(item.gradeKey)) {
-        return { key: "up", label: "예산 증액 검토", reason: "조회와 방문 흐름이 좋아 예산 확대 테스트 후보입니다." };
+        return { key: "up", label: "예산 증액 검토", reason: "조회 후 방문 전환이 좋아 예산 확대 테스트 후보입니다." };
       }
       if (["review", "creative"].includes(item.gradeKey)) {
-        return { key: "down", label: "예산 축소/점검", reason: "비용 대비 퍼널 흐름이 약해 소재 또는 타겟 점검 후 예산 조정이 필요합니다." };
+        return { key: "down", label: "예산 축소/점검", reason: "조회가 방문으로 이어지는 힘이 약해 소재 또는 타겟 점검 후 예산 조정이 필요합니다." };
       }
       return { key: "keep", label: "유지", reason: "성과가 평균권이라 급한 증액/축소보다는 유지 관찰이 적합합니다." };
     }
@@ -1116,22 +1145,22 @@ dayjs.locale("ko");
 
       const withActions = items.map((item) => ({ ...item, budgetAction: budgetActionForPromotion(item) }));
       const groups = [
-        ["up", "예산 증액 검토", "방문율과 조회 흐름이 좋은 후보입니다."],
-        ["keep", "유지 후보", "성과가 평균권인 프로모션입니다."],
-        ["down", "축소/점검 후보", "비용 대비 흐름이 약한 후보입니다."],
-        ["hold", "판단 보류", "데이터가 더 필요한 항목입니다."]
+        ["up", "예산 증액 검토", "조회→방문 전환이 상위권인 후보입니다.", "positive"],
+        ["keep", "유지 후보", "성과가 평균권인 프로모션입니다.", "neutral"],
+        ["down", "축소/점검 후보", "조회 후 방문 흐름이 약한 후보입니다.", "warning"],
+        ["hold", "판단 보류", "데이터가 더 필요한 항목입니다.", "neutral"]
       ];
 
       dom.youtubeBudgetJudgment.innerHTML = `
         <div class="analysis-card-grid">
-          ${groups.map(([key, title, description]) => {
+          ${groups.map(([key, title, description, tone]) => {
             const groupItems = withActions.filter((item) => item.budgetAction.key === key).sort((a, b) => b.cost - a.cost).slice(0, 5);
             return `
-              <article class="analysis-card">
+              <article class="analysis-card ${tone}">
                 <h3>${title}</h3>
                 <h4>${groupItems.length}개 프로모션</h4>
                 <p>${description}</p>
-                ${promotionListMarkup(groupItems, (item) => formatCurrency(item.cost))}
+                ${promotionListMarkup(groupItems, (item) => formatPercent(item.visitRate))}
               </article>
             `;
           }).join("")}
@@ -1171,7 +1200,9 @@ dayjs.locale("ko");
         return {
           ...group,
           totals,
-          score: percent(totals.visitors, totals.views) + percent(totals.views, totals.impressions) * 0.25
+          score: percent(totals.visitors, totals.views) * 0.7
+            + percent(totals.visitors, totals.impressions) * 0.2
+            + percent(totals.views, totals.impressions) * 0.1
         };
       }).sort((a, b) => b.score - a.score);
       const bestType = typeRows[0];
@@ -1182,10 +1213,10 @@ dayjs.locale("ko");
           <article class="analysis-card featured">
             <h3>문구 유형 요약</h3>
             <h4>${escapeHtml(bestType.label)} 흐름 우세</h4>
-            <p>방문율과 조회 흐름을 함께 봤을 때 현재 필터에서는 ${escapeHtml(bestType.label)}이 가장 강합니다.</p>
+            <p>조회→방문 전환을 가장 크게 반영했을 때 현재 필터에서는 ${escapeHtml(bestType.label)}이 가장 강합니다.</p>
             ${promotionListMarkup(bestType.items.sort((a, b) => b.performanceScore - a.performanceScore).slice(0, 4), (item) => formatPercent(item.visitRate))}
           </article>
-          <article class="analysis-card">
+          <article class="analysis-card warning">
             <h3>소재 점검 후보</h3>
             <h4>${escapeHtml(weakType.label)}</h4>
             <p>상대적으로 방문 전환이 낮은 문구 유형입니다. 제목의 약속과 랜딩 CTA 연결을 점검해볼 만합니다.</p>
@@ -1200,7 +1231,8 @@ dayjs.locale("ko");
                   <span>${row.items.length}개</span>
                   <span>조회 ${formatNumber(row.totals.views)}</span>
                   <span>방문율 ${formatPercent(row.totals.averageVisitRate)}</span>
-                  <span>구독 ${formatNumber(row.totals.subscribers)}</span>
+                  <span>노출→방문 ${formatPercent(percent(row.totals.visitors, row.totals.impressions))}</span>
+                  <span>CPV ${formatUnitCurrency(row.totals.averageCpv)}</span>
                 </div>
               `).join("")}
             </div>

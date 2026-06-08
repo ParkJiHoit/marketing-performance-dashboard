@@ -824,6 +824,11 @@
       background: var(--surface-2);
     }
 
+    .metric-pair.primary {
+      border-color: color-mix(in srgb, var(--youtube), var(--line) 34%);
+      background: color-mix(in srgb, var(--youtube), transparent 92%);
+    }
+
     .metric-pair span {
       display: block;
       color: var(--muted);
@@ -952,12 +957,16 @@
     .analysis-tabs {
       display: inline-flex;
       flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 14px;
-      padding: 5px;
+      gap: 7px;
+      margin-bottom: 16px;
+      padding: 6px;
       border: 1px solid var(--line);
-      border-radius: 999px;
+      border-radius: 10px;
       background: var(--surface-2);
+    }
+
+    .analysis-tabs .tab-btn {
+      border-radius: 8px;
     }
 
     .analysis-panel {
@@ -970,26 +979,59 @@
 
     .analysis-card-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(12, minmax(0, 1fr));
       gap: 12px;
     }
 
     .analysis-card {
+      position: relative;
       display: grid;
       align-content: start;
-      gap: 12px;
-      min-height: 230px;
-      padding: 15px;
+      grid-column: span 6;
+      gap: 13px;
+      min-height: 0;
+      padding: 17px;
       border: 1px solid var(--soft-line);
       border-radius: var(--radius);
       background: var(--surface);
+      overflow: hidden;
+      box-shadow: 0 10px 26px rgba(15, 23, 42, 0.04);
+    }
+
+    .analysis-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 4px;
+      background: var(--line);
     }
 
     .analysis-card.featured {
+      grid-column: span 7;
       border-color: color-mix(in srgb, var(--youtube), var(--line) 38%);
       background:
-        linear-gradient(180deg, color-mix(in srgb, var(--youtube), transparent 92%), transparent 68%),
+        linear-gradient(145deg, color-mix(in srgb, var(--youtube), transparent 90%), transparent 62%),
         var(--surface);
+    }
+
+    .analysis-card.featured + .analysis-card {
+      grid-column: span 5;
+    }
+
+    .analysis-card.featured::before {
+      background: var(--youtube);
+    }
+
+    .analysis-card.positive::before {
+      background: var(--green);
+    }
+
+    .analysis-card.warning::before {
+      background: var(--amber);
+    }
+
+    .analysis-card.danger::before {
+      background: var(--youtube);
     }
 
     .analysis-card.wide {
@@ -1004,8 +1046,9 @@
 
     .analysis-card h4 {
       margin: 0;
-      font-size: 18px;
+      font-size: 20px;
       line-height: 1.28;
+      letter-spacing: 0;
     }
 
     .analysis-card p {
@@ -1013,6 +1056,54 @@
       color: var(--muted);
       font-size: 13px;
       line-height: 1.55;
+    }
+
+    .decision-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .decision-row {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr) auto auto;
+      gap: 9px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--soft-line);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+    }
+
+    .decision-main {
+      display: grid;
+      min-width: 0;
+      gap: 3px;
+    }
+
+    .decision-main strong {
+      overflow: hidden;
+      color: var(--ink);
+      font-size: 13px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .decision-main span {
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .decision-score {
+      min-width: 64px;
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: right;
+      white-space: nowrap;
     }
 
     .analysis-type-table {
@@ -1415,7 +1506,12 @@
         grid-template-columns: 1fr;
       }
 
+      .analysis-card,
       .analysis-card.wide {
+        grid-column: auto;
+      }
+
+      .analysis-card.featured + .analysis-card {
         grid-column: auto;
       }
 
