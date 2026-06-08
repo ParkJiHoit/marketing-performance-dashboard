@@ -72,6 +72,21 @@ function groupBy(items, keyGetter) {
   }, {});
 }
 
+async function safeGet(client, uri, options, { fallback = [], issues, label } = {}) {
+  try {
+    return await client.get(uri, options);
+  } catch (error) {
+    if (issues && label) {
+      issues.push({
+        label,
+        status: error.status || null,
+        message: error.payload?.message || error.message
+      });
+    }
+    return fallback;
+  }
+}
+
 async function mapLimit(items, limit, task) {
   const results = [];
   let cursor = 0;
@@ -145,6 +160,7 @@ function distributeAdGroupStatsToKeywords(adGroupStats, keywordsByAdGroup) {
 
 async function collectNaverSaData(url) {
   const client = createClient();
+  const issues = [];
   const startDate = url.searchParams.get("startDate");
   const endDate = url.searchParams.get("endDate");
   const maxAdGroups = Number(url.searchParams.get("maxAdGroups") || 25);
@@ -152,10 +168,18 @@ async function collectNaverSaData(url) {
   const timeRange = startDate && endDate ? JSON.stringify({ since: startDate, until: endDate }) : undefined;
 
   const campaigns = (await client.get("/ncc/campaigns")).map(normalizeCampaign);
-  const adGroups = (await client.get("/ncc/adgroups")).map(normalizeAdGroup);
+  const adGroups = (await safeGet(client, "/ncc/adgroups", undefined, {
+    fallback: [],
+    issues,
+    label: "adGroups"
+  })).map(normalizeAdGroup);
   const adGroupsForKeywordFetch = adGroups.slice(0, maxAdGroups);
   const keywordsNested = await Promise.all(adGroupsForKeywordFetch.map((adGroup) =>
-    client.get("/ncc/keywords", { query: { nccAdgroupId: adGroup.adGroupId } }).catch(() => [])
+    safeGet(client, "/ncc/keywords", { query: { nccAdgroupId: adGroup.adGroupId } }, {
+      fallback: [],
+      issues,
+      label: `keywords:${adGroup.adGroupId}`
+    })
   ));
   const keywords = keywordsNested.flat().map(normalizeKeyword).slice(0, maxKeywords);
 
@@ -204,12 +228,14 @@ async function collectNaverSaData(url) {
       generatedAt: new Date().toISOString(),
       conversionTrackingEnabled: stats.some((stat) => stat.conversion > 0),
       statSource: keywordStats.length ? "keyword" : adGroupStats.length ? "adGroup-distributed" : campaignStats.length ? "campaign" : "none",
+      statsUnavailable: !stats.length && Boolean(campaigns.length || adGroups.length || keywords.length),
       campaignStatsCount: campaignStats.length,
       adGroupStatsCount: adGroupStats.length,
       keywordStatsCount: keywordStats.length,
       maxAdGroups,
       maxKeywords,
-      partial: adGroups.length > maxAdGroups || keywords.length >= maxKeywords
+      partial: adGroups.length > maxAdGroups || keywords.length >= maxKeywords || issues.length > 0,
+      issues: issues.slice(0, 12)
     },
     campaigns,
     adGroups,
@@ -259,11 +285,15 @@ const server = http.createServer(async (req, res) => {
       }
       sendJson(res, 200, payload);
     } catch (error) {
-      sendJson(res, error.status || 500, {
-        message: error.status === 401 || error.status === 403
-          ? "네이버 SA API 인증에 실패했습니다. 환경변수와 API 권한을 확인해주세요."
-          : "네이버 SA 데이터를 불러오지 못했습니다. API 인증 정보 또는 요청 범위를 확인해주세요.",
-        detail: error.payload || error.message
+      const networkFailed = error.message === "fetch failed";
+      const status = error.status || (networkFailed ? 502 : 500);
+      return sendJson(res, status, {
+        message: status === 401 || status === 403
+          ? "네이버 SA API 인증에 실패했습니다. API 키, 시크릿 키, 고객 ID와 권한을 확인해주세요."
+          : networkFailed
+            ? "서버에서 네이버 API로 접속하지 못했습니다. 인터넷 연결 또는 실행 환경의 네트워크 권한을 확인해주세요."
+            : "네이버 SA 데이터를 불러오지 못했습니다. API 응답 또는 요청 범위를 확인해주세요.",
+        detail: error.payload || error.cause?.code || error.message
       });
     }
     return;

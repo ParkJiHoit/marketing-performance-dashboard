@@ -170,18 +170,28 @@
     state.loading = true;
     state.error = "";
     setStatusVisibility();
-    const result = await window.NaverSaApiService.loadNaverSaData(state.filters);
-    if (requestId !== state.requestId) return;
-    state.loading = false;
-    if (result.error) {
-      state.error = result.error;
+    try {
+      const result = await window.NaverSaApiService.loadNaverSaData(state.filters);
+      if (requestId !== state.requestId) return;
+      if (result.error) {
+        state.error = result.error;
+        state.dataset = null;
+        state.enriched = null;
+      } else {
+        state.dataset = result.dataset;
+        state.enriched = metrics().enrichDataset(filterDatasetByDate(result.dataset));
+      }
+    } catch (error) {
+      if (requestId !== state.requestId) return;
+      state.error = `네이버 SA 데이터를 화면에 표시하는 중 오류가 발생했습니다. 상세: ${error.message || error}`;
       state.dataset = null;
       state.enriched = null;
-    } else {
-      state.dataset = result.dataset;
-      state.enriched = metrics().enrichDataset(filterDatasetByDate(result.dataset));
+    } finally {
+      if (requestId === state.requestId) {
+        state.loading = false;
+        render();
+      }
     }
-    render();
   }
 
   function filterDatasetByDate(dataset) {
@@ -225,10 +235,18 @@
 
   function renderMode() {
     if (dom.modeBadge()) {
-      dom.modeBadge().textContent = "API Data";
-      dom.modeBadge().className = "pill completed";
+      dom.modeBadge().textContent = state.error ? "API Error" : "API Data";
+      dom.modeBadge().className = state.error ? "pill danger" : "pill completed";
     }
     if (dom.notice()) {
+      if (state.error) {
+        dom.notice().innerHTML = `<span>${escapeHtml(state.error)}</span>`;
+        return;
+      }
+      if (state.enriched?.meta?.statsUnavailable) {
+        dom.notice().innerHTML = "<span>캠페인/광고그룹/키워드 기본 데이터는 불러왔지만, 네이버 성과 통계 API 응답이 없어 비용/클릭/전환 지표는 0 또는 빈 값으로 표시될 수 있습니다.</span>";
+        return;
+      }
       const conversionNote = state.enriched?.meta?.conversionTrackingEnabled === false
         ? "전환 추적 미연동 상태에서는 전환/CPA/ROAS 지표가 0 또는 전환 없음으로 표시될 수 있습니다."
         : "일부 지표는 API 응답 또는 전환 설정 여부에 따라 표시되지 않을 수 있습니다.";
