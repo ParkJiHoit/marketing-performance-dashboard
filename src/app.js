@@ -164,7 +164,8 @@ dayjs.locale("ko");
       const visitors = toNumber(item.visitors);
 
       return {
-        cpv: divide(cost, views),
+        cpv: divide(cost, visitors),
+        viewCost: divide(cost, views),
         cpm: divide(cost, impressions) * 1000,
         viewRate: percent(views, impressions),
         impressionVisitRate: percent(visitors, impressions),
@@ -189,6 +190,7 @@ dayjs.locale("ko");
         goalLabel: GOAL_LABELS[item.goal] || item.goal || "-",
         createdAtLabel: item.createdAt ? dayjs(item.createdAt).format("YYYY.MM.DD") : "-",
         cpv: metrics.cpv,
+        viewCost: metrics.viewCost,
         cpm: metrics.cpm,
         viewRate: metrics.viewRate,
         impressionVisitRate: metrics.impressionVisitRate,
@@ -220,8 +222,7 @@ dayjs.locale("ko");
         p75VisitRate: percentile(visitRates, 0.75),
         p75ViewRate: percentile(viewRates, 0.75),
         p75ImpressionVisitRate: percentile(impressionVisitRates, 0.75),
-        medianCpv: median(active.map((item) => item.cpv).filter((value) => value > 0)),
-        medianCostPerVisitor: median(active.map((item) => item.costPerVisitor).filter((value) => value > 0))
+        medianCpv: median(active.map((item) => item.cpv).filter((value) => value > 0))
       };
     }
 
@@ -243,7 +244,7 @@ dayjs.locale("ko");
       const efficientCpv = item.cpv > 0 && (!benchmarks.medianCpv || item.cpv <= benchmarks.medianCpv * 1.15);
       const costly = benchmarks.avgCost > 0 && item.cost >= benchmarks.avgCost * 1.15;
       const weakView = benchmarks.medianViewRate > 0 && item.viewRate < benchmarks.medianViewRate * 0.75;
-      const highVisitorCost = item.costPerVisitor > 0 && benchmarks.medianCostPerVisitor > 0 && item.costPerVisitor >= benchmarks.medianCostPerVisitor * 1.35;
+      const highVisitCost = item.cpv > 0 && benchmarks.medianCpv > 0 && item.cpv >= benchmarks.medianCpv * 1.35;
 
       if (strongVisit && strongView && enoughVisitors && efficientCpv) {
         return {
@@ -261,7 +262,7 @@ dayjs.locale("ko");
         };
       }
 
-      if (costly && (weakVisit || weakView || highVisitorCost)) {
+      if (costly && (weakVisit || weakView || highVisitCost)) {
         return {
           key: "review",
           label: "점검 필요",
@@ -442,7 +443,9 @@ dayjs.locale("ko");
 
       return {
         ...totals,
-        averageCpv: divide(totals.cost, totals.views),
+        averageCpv: divide(totals.cost, totals.visitors),
+        averageViewCost: divide(totals.cost, totals.views),
+        averageVisitCpv: divide(totals.cost, totals.visitors),
         averageVisitRate: percent(totals.visitors, totals.views),
         averageSubscribeRate: percent(totals.subscribers, totals.views)
       };
@@ -456,8 +459,6 @@ dayjs.locale("ko");
         viewRate: items.map((item) => item.viewRate),
         impressionVisitRate: items.map((item) => item.impressionVisitRate),
         visitRate: items.map((item) => item.visitRate),
-        visitors: items.map((item) => item.visitors),
-        costPerVisitor: items.map((item) => item.costPerVisitor).filter((value) => value > 0),
         cpv: items.map((item) => item.cpv).filter((value) => value > 0)
       };
 
@@ -470,8 +471,6 @@ dayjs.locale("ko");
         viewRate: minMax(values.viewRate),
         impressionVisitRate: minMax(values.impressionVisitRate),
         visitRate: minMax(values.visitRate),
-        visitors: minMax(values.visitors),
-        costPerVisitor: minMax(values.costPerVisitor.length ? values.costPerVisitor : [0]),
         cpv: minMax(values.cpv.length ? values.cpv : [0])
       };
 
@@ -483,12 +482,10 @@ dayjs.locale("ko");
 
       return items.map((item) => {
         const score =
-          normalizeHigh(item.visitRate, ranges.visitRate) * 55 +
-          normalizeHigh(item.impressionVisitRate, ranges.impressionVisitRate) * 15 +
-          normalizeHigh(item.viewRate, ranges.viewRate) * 12 +
-          normalizeHigh(item.visitors, ranges.visitors) * 10 +
-          normalizeLow(item.cpv, ranges.cpv) * 5 +
-          normalizeLow(item.costPerVisitor, ranges.costPerVisitor) * 3;
+          normalizeHigh(item.visitRate, ranges.visitRate) * 62 +
+          normalizeHigh(item.impressionVisitRate, ranges.impressionVisitRate) * 17 +
+          normalizeHigh(item.viewRate, ranges.viewRate) * 13 +
+          normalizeLow(item.cpv, ranges.cpv) * 8;
 
         return {
           ...item,
@@ -553,7 +550,7 @@ dayjs.locale("ko");
         { label: "총 비용", value: formatKpiCurrency(totals.cost), note: formatCurrency(totals.cost), color: "var(--youtube)" },
         { label: "총 조회수", value: formatNumber(totals.views), note: "전체 프로모션 합산", color: "var(--green)" },
         { label: "총 방문자 수", value: formatNumber(totals.visitors), note: `방문율 ${formatPercent(totals.averageVisitRate)}`, color: "var(--blue)" },
-        { label: "평균 CPV", value: formatUnitCurrency(totals.averageCpv), note: "비용 ÷ 조회수", color: "var(--green)" }
+        { label: "방문 CPV", value: formatUnitCurrency(totals.averageCpv), note: "비용 ÷ 방문자 수", color: "var(--green)" }
       ];
 
       dom.kpiGrid.innerHTML = kpis.map((kpi) => `
@@ -748,7 +745,7 @@ dayjs.locale("ko");
           { title: "비용", field: "cost", hozAlign: "right", sorter: "number", formatter: (cell) => formatCurrency(cell.getValue()) },
           { title: "조회수", field: "views", hozAlign: "right", sorter: "number", formatter: (cell) => formatNumber(cell.getValue()) },
           { title: "방문자 수", field: "visitors", hozAlign: "right", sorter: "number", formatter: (cell) => formatNumber(cell.getValue()) },
-          { title: "CPV", field: "cpv", hozAlign: "right", sorter: "number", formatter: (cell) => formatUnitCurrency(cell.getValue()) },
+          { title: "방문 CPV", field: "cpv", hozAlign: "right", sorter: "number", formatter: (cell) => formatUnitCurrency(cell.getValue()) },
           { title: "방문율", field: "visitRate", hozAlign: "right", sorter: "number", formatter: (cell) => formatPercent(cell.getValue()) },
           { title: "관리", field: "actions", width: 180, hozAlign: "center", headerSort: false, formatter: actionFormatter }
         ]
@@ -1061,7 +1058,7 @@ dayjs.locale("ko");
               <span class="rank-index">${index + 1}</span>
               <span class="decision-main">
                 <strong>${escapeHtml(item.name)}</strong>
-                <span>조회→방문 ${formatPercent(item.visitRate)} · 노출→조회 ${formatPercent(item.viewRate)} · CPV ${formatUnitCurrency(item.cpv)}</span>
+                <span>조회→방문 ${formatPercent(item.visitRate)} · 노출→조회 ${formatPercent(item.viewRate)} · 방문 CPV ${formatUnitCurrency(item.cpv)}</span>
               </span>
               <span class="action-badge grade-${item.gradeKey}">${escapeHtml(item.gradeLabel)}</span>
               <span class="decision-score">${valueFormatter(item)}</span>
@@ -1098,7 +1095,7 @@ dayjs.locale("ko");
               <div class="metric-pair primary"><span>조회 → 방문</span><strong>${formatPercent(totals.averageVisitRate)}</strong></div>
               <div class="metric-pair"><span>노출 → 방문</span><strong>${formatPercent(percent(totals.visitors, totals.impressions))}</strong></div>
               <div class="metric-pair"><span>노출 → 조회</span><strong>${formatPercent(percent(totals.views, totals.impressions))}</strong></div>
-              <div class="metric-pair"><span>평균 CPV</span><strong>${formatUnitCurrency(totals.averageCpv)}</strong></div>
+              <div class="metric-pair"><span>방문 CPV</span><strong>${formatUnitCurrency(totals.averageCpv)}</strong></div>
             </div>
           </article>
           <article class="analysis-card positive">
@@ -1232,7 +1229,7 @@ dayjs.locale("ko");
                   <span>조회 ${formatNumber(row.totals.views)}</span>
                   <span>방문율 ${formatPercent(row.totals.averageVisitRate)}</span>
                   <span>노출→방문 ${formatPercent(percent(row.totals.visitors, row.totals.impressions))}</span>
-                  <span>CPV ${formatUnitCurrency(row.totals.averageCpv)}</span>
+                  <span>방문 CPV ${formatUnitCurrency(row.totals.averageCpv)}</span>
                 </div>
               `).join("")}
             </div>
@@ -1879,10 +1876,9 @@ dayjs.locale("ko");
         "조회수": item.views,
         "구독자 수": item.subscribers,
         "웹사이트 방문자 수": item.visitors,
-        CPV: round(item.cpv, 2),
+        "방문 CPV": round(item.cpv, 2),
         "방문율": round(item.visitRate, 2),
-        "방문자당 비용": round(item.costPerVisitor, 2),
-        "구독 전환율": round(item.subscribeRate, 2)
+        "노출 대비 방문율": round(item.impressionVisitRate, 2)
       }));
       downloadText(Papa.unparse(rows), `youtube_promotions_${dayjs().format("YYYYMMDD_HHmm")}.csv`, "text/csv;charset=utf-8");
       showToast("CSV 파일을 내보냈습니다.");
