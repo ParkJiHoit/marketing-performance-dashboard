@@ -34,11 +34,26 @@ function createClient() {
   async function request(method, uri, { query, body } = {}) {
     const search = query ? `?${new URLSearchParams(query).toString()}` : "";
     const requestUri = `${uri}${search}`;
-    const response = await fetch(`${baseUrl}${requestUri}`, {
-      method,
-      headers: createHeaders(method, uri),
-      body: body ? JSON.stringify(body) : undefined
-    });
+    const timeoutMs = Number(process.env.NAVER_API_TIMEOUT_MS || 12000) || 12000;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    let response;
+    try {
+      response = await fetch(`${baseUrl}${requestUri}`, {
+        method,
+        headers: createHeaders(method, uri),
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal
+      });
+    } catch (error) {
+      const timedOut = error.name === "AbortError";
+      const wrapped = new Error(timedOut ? `Naver Search Ad API timed out after ${timeoutMs}ms` : error.message);
+      wrapped.cause = error;
+      wrapped.code = timedOut ? "NAVER_API_TIMEOUT" : error.code;
+      throw wrapped;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const text = await response.text();
     const data = text ? JSON.parse(text) : null;

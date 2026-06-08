@@ -1009,6 +1009,68 @@
       line-height: 1.65;
     }
 
+    .loading-progress {
+      width: min(540px, 100%);
+      margin: 22px auto 0;
+      padding: 14px;
+      border: 1px solid var(--panel-border-soft);
+      border-radius: 24px;
+      background: var(--floating-surface-soft);
+      box-shadow: var(--shadow-soft);
+      text-align: left;
+    }
+
+    .loading-progress-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .loading-progress-head strong {
+      flex: 0 0 auto;
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .loading-progress-head span {
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    .loading-progress-track {
+      height: 12px;
+      margin-top: 12px;
+      overflow: hidden;
+      border: 1px solid var(--soft-line);
+      border-radius: 999px;
+      background: var(--surface-3);
+    }
+
+    .loading-progress-track i {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--green), var(--blue), var(--youtube-2));
+      box-shadow: 0 0 18px color-mix(in srgb, var(--green), transparent 62%);
+      transition: width 0.45s ease;
+    }
+
+    .loading-progress p {
+      margin: 9px 2px 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-align: right;
+    }
+
     .modal-backdrop {
       position: fixed;
       inset: 0;

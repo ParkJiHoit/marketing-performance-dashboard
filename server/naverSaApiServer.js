@@ -286,14 +286,17 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, payload);
     } catch (error) {
       const networkFailed = error.message === "fetch failed";
-      const status = error.status || (networkFailed ? 502 : 500);
+      const timeoutFailed = error.code === "NAVER_API_TIMEOUT";
+      const status = error.status || (timeoutFailed ? 504 : networkFailed ? 502 : 500);
       return sendJson(res, status, {
         message: status === 401 || status === 403
           ? "네이버 SA API 인증에 실패했습니다. API 키, 시크릿 키, 고객 ID와 권한을 확인해주세요."
+          : timeoutFailed
+            ? "\ub124\uc774\ubc84 SA API \uc751\ub2f5\uc774 \uc9c0\uc5f0\ub418\uc5b4 \uc694\uccad\uc744 \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4. \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \uc2dc\ub3c4\ud558\uac70\ub098 NAVER_API_TIMEOUT_MS \uac12\uc744 \ub298\ub824\uc8fc\uc138\uc694."
           : networkFailed
             ? "서버에서 네이버 API로 접속하지 못했습니다. 인터넷 연결 또는 실행 환경의 네트워크 권한을 확인해주세요."
             : "네이버 SA 데이터를 불러오지 못했습니다. API 응답 또는 요청 범위를 확인해주세요.",
-        detail: error.payload || error.cause?.code || error.message
+        detail: error.payload || error.code || error.cause?.code || error.message
       });
     }
     return;

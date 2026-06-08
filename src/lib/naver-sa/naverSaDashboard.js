@@ -32,7 +32,11 @@
       searchTerms: 1,
       creatives: 1
     },
-    requestId: 0
+    requestId: 0,
+    loadingProgress: 0,
+    loadingMessage: "",
+    loadingStartedAt: 0,
+    loadingTimer: null
   };
 
   const $ = (selector) => document.querySelector(selector);
@@ -69,7 +73,10 @@
   async function activate() {
     init();
     state.active = true;
-    if (!state.dataset) await loadData();
+    if (!state.dataset) {
+      if (!state.loading) await loadData();
+      else setStatusVisibility();
+    }
     render();
     syncLayout();
   }
@@ -164,31 +171,126 @@
     });
   }
 
+  function ensureLoadingProgress() {
+    const loading = dom.loading();
+    if (!loading || loading.querySelector(".loading-progress")) return;
+
+    const container = document.createElement("div");
+    container.className = "loading-progress";
+    container.setAttribute("aria-label", "\ub124\uc774\ubc84 SA \ub370\uc774\ud130 \ub85c\ub529 \uc9c4\ud589\ub960");
+    container.innerHTML = `
+      <div class="loading-progress-head">
+        <strong data-naver-loading-percent>0%</strong>
+        <span data-naver-loading-message>\ub124\uc774\ubc84 API \uc5f0\uacb0 \uc900\ube44 \uc911...</span>
+      </div>
+      <div class="loading-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <i data-naver-loading-bar></i>
+      </div>
+      <p data-naver-loading-elapsed>0\ucd08 \uacbd\uacfc</p>
+    `;
+    loading.querySelector("div")?.appendChild(container);
+  }
+
+  function estimateLoadingProgress(elapsedMs) {
+    if (elapsedMs < 2000) {
+      return {
+        progress: 12 + (elapsedMs / 2000) * 18,
+        message: "\ub124\uc774\ubc84 API \uc5f0\uacb0 \uc911..."
+      };
+    }
+    if (elapsedMs < 8000) {
+      return {
+        progress: 30 + ((elapsedMs - 2000) / 6000) * 25,
+        message: "\ucea0\ud398\uc778\uacfc \uad11\uace0\uadf8\ub8f9\uc744 \ubd88\ub7ec\uc624\ub294 \uc911..."
+      };
+    }
+    if (elapsedMs < 20000) {
+      return {
+        progress: 55 + ((elapsedMs - 8000) / 12000) * 25,
+        message: "\ud0a4\uc6cc\ub4dc\uc640 \uc131\uacfc \uc9c0\ud45c\ub97c \uc815\ub9ac\ud558\ub294 \uc911..."
+      };
+    }
+    return {
+      progress: Math.min(92, 80 + Math.log10(((elapsedMs - 19000) / 1000) + 1) * 8),
+      message: "\ub124\uc774\ubc84 \uc751\ub2f5\uc744 \uae30\ub2e4\ub9ac\ub294 \uc911... \uc624\ub798 \uac78\ub9ac\uba74 \ub124\ud2b8\uc6cc\ud06c\ub098 API \uc81c\ud55c\uc744 \ud655\uc778\ud574\uc8fc\uc138\uc694."
+    };
+  }
+
+  function renderLoadingProgress() {
+    ensureLoadingProgress();
+    const loading = dom.loading();
+    if (!loading) return;
+    const progress = Math.max(0, Math.min(100, Math.round(state.loadingProgress || 0)));
+    const message = state.loadingMessage || "\ub124\uc774\ubc84 API \uc5f0\uacb0 \uc900\ube44 \uc911...";
+    const elapsedSeconds = state.loadingStartedAt ? Math.floor((Date.now() - state.loadingStartedAt) / 1000) : 0;
+    const bar = loading.querySelector("[data-naver-loading-bar]");
+    const track = loading.querySelector(".loading-progress-track");
+    const percent = loading.querySelector("[data-naver-loading-percent]");
+    const messageNode = loading.querySelector("[data-naver-loading-message]");
+    const elapsed = loading.querySelector("[data-naver-loading-elapsed]");
+    if (bar) bar.style.width = `${progress}%`;
+    if (track) track.setAttribute("aria-valuenow", String(progress));
+    if (percent) percent.textContent = `${progress}%`;
+    if (messageNode) messageNode.textContent = message;
+    if (elapsed) elapsed.textContent = `${elapsedSeconds}\ucd08 \uacbd\uacfc`;
+  }
+
+  function startLoadingProgress() {
+    stopLoadingProgress();
+    state.loadingStartedAt = Date.now();
+    state.loadingProgress = 8;
+    state.loadingMessage = "\ub124\uc774\ubc84 API \uc5f0\uacb0 \uc900\ube44 \uc911...";
+    renderLoadingProgress();
+    state.loadingTimer = window.setInterval(() => {
+      const next = estimateLoadingProgress(Date.now() - state.loadingStartedAt);
+      state.loadingProgress = next.progress;
+      state.loadingMessage = next.message;
+      renderLoadingProgress();
+    }, 450);
+  }
+
+  function stopLoadingProgress() {
+    if (state.loadingTimer) {
+      window.clearInterval(state.loadingTimer);
+      state.loadingTimer = null;
+    }
+  }
+
   async function loadData() {
     const requestId = state.requestId + 1;
     state.requestId = requestId;
     state.loading = true;
     state.error = "";
+    startLoadingProgress();
     setStatusVisibility();
     try {
       const result = await window.NaverSaApiService.loadNaverSaData(state.filters);
       if (requestId !== state.requestId) return;
       if (result.error) {
+        state.loadingProgress = 100;
+        state.loadingMessage = "\ubd88\ub7ec\uc624\uae30\ub97c \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4";
         state.error = result.error;
         state.dataset = null;
         state.enriched = null;
       } else {
+        state.loadingProgress = 100;
+        state.loadingMessage = "\ub370\uc774\ud130 \uc815\ub9ac \uc644\ub8cc";
+        renderLoadingProgress();
         state.dataset = result.dataset;
         state.enriched = metrics().enrichDataset(filterDatasetByDate(result.dataset));
       }
     } catch (error) {
       if (requestId !== state.requestId) return;
+      state.loadingProgress = 100;
+      state.loadingMessage = "\ubd88\ub7ec\uc624\uae30\ub97c \uc911\ub2e8\ud588\uc2b5\ub2c8\ub2e4";
       state.error = `네이버 SA 데이터를 화면에 표시하는 중 오류가 발생했습니다. 상세: ${error.message || error}`;
       state.dataset = null;
       state.enriched = null;
     } finally {
       if (requestId === state.requestId) {
+        stopLoadingProgress();
         state.loading = false;
+        setStatusVisibility();
         render();
       }
     }
@@ -226,11 +328,18 @@
 
   function setStatusVisibility() {
     if (dom.loading()) dom.loading().hidden = !state.loading;
+    if (state.loading) renderLoadingProgress();
+    if (dom.refreshBtn()) dom.refreshBtn().disabled = state.loading;
     if (dom.error()) dom.error().hidden = !state.error;
     if (dom.errorMessage()) dom.errorMessage().textContent = state.error;
-    const empty = state.enriched && !state.enriched.stats.length && !state.enriched.campaigns.length && !state.enriched.adGroups.length && !state.enriched.keywords.length;
+    const statsCount = getStatsCount();
+    const empty = state.enriched && !statsCount && !state.enriched.campaigns.length && !state.enriched.adGroups.length && !state.enriched.keywords.length;
     if (dom.empty()) dom.empty().hidden = !empty || state.loading || Boolean(state.error);
     if ($("#naverSaTabPanels")) $("#naverSaTabPanels").hidden = state.loading || Boolean(state.error) || empty;
+  }
+
+  function getStatsCount() {
+    return (state.enriched?.stats || state.enriched?.raw?.stats || state.enriched?.daily || []).length;
   }
 
   function renderMode() {
@@ -251,7 +360,7 @@
         ? "전환 추적 미연동 상태에서는 전환/CPA/ROAS 지표가 0 또는 전환 없음으로 표시될 수 있습니다."
         : "일부 지표는 API 응답 또는 전환 설정 여부에 따라 표시되지 않을 수 있습니다.";
       const counts = state.enriched
-        ? `캠페인 ${state.enriched.campaigns.length}개 · 광고그룹 ${state.enriched.adGroups.length}개 · 키워드 ${state.enriched.keywords.length}개 · 성과 ${state.enriched.stats.length}건`
+        ? `캠페인 ${state.enriched.campaigns.length}개 · 광고그룹 ${state.enriched.adGroups.length}개 · 키워드 ${state.enriched.keywords.length}개 · 성과 ${getStatsCount()}건`
         : "";
       const partial = state.enriched?.meta?.partial ? "빠른 로딩을 위해 일부 키워드 기준으로 먼저 표시 중입니다." : "";
       dom.notice().innerHTML = `<span>${conversionNote}${partial ? ` ${partial}` : ""}</span>${counts ? `<strong>${counts}</strong>` : ""}`;

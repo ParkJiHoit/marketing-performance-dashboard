@@ -26,6 +26,9 @@
     if (detail === "fetch failed") {
       return "서버에서 네이버 API로 접속하지 못했습니다. 인터넷 연결, 방화벽/VPN, 또는 실행 환경의 네트워크 권한을 확인해주세요.";
     }
+    if (status === 504 || detail === "NAVER_API_TIMEOUT") {
+      return "\ub124\uc774\ubc84 SA API \uc751\ub2f5\uc774 \ub290\ub824 \uc694\uccad\uc774 \uc911\ub2e8\ub410\uc2b5\ub2c8\ub2e4. \uc0c8\ub85c\uace0\uce68\uc73c\ub85c \ub2e4\uc2dc \uc2dc\ub3c4\ud574\uc8fc\uc138\uc694. \uacc4\uc18d \ubc18\ubcf5\ub418\uba74 \uc11c\ubc84\uc758 NAVER_API_TIMEOUT_MS \uac12\uc744 \ub298\ub824\uc8fc\uc138\uc694.";
+    }
     return [
       body.message || fallback || "네이버 SA 데이터를 불러오지 못했습니다.",
       detail ? `상세: ${detail}` : ""
