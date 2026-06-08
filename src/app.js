@@ -1128,6 +1128,27 @@ dayjs.locale("ko");
       return isStudioPreviewImageLine(cleaned) ? "" : cleaned;
     }
 
+    function isStudioMetricLine(line) {
+      const text = cleanStudioLine(line);
+      if (!text) return false;
+      if (/^[₩$]\s*\d/.test(text)) return true;
+      if (/^[₩$]?\s*\d[\d,]*(?:\.\d+)?(?:\s+[₩$]?\d[\d,]*(?:\.\d+)?){1,6}$/.test(text)) return true;
+      if (/^[₩$]?\s*\d+(?:\.\d{2})\d[\d,]+/.test(text)) return true;
+      return false;
+    }
+
+    function isStudioTitleCandidate(line) {
+      const text = cleanStudioLine(line);
+      return Boolean(text)
+        && !isStudioPreviewImageLine(text)
+        && !isDurationLine(text)
+        && !isStudioHeaderLine(text)
+        && !isStudioStatusLine(text)
+        && !isStudioGoalLine(text)
+        && !isStudioDate(text)
+        && !isStudioMetricLine(text);
+    }
+
     function isDurationLine(line) {
       return /^\d{1,2}:\d{2}(?::\d{2})?$/.test(line);
     }
@@ -1259,7 +1280,7 @@ dayjs.locale("ko");
       const legacyRecords = titleIndexes.map((startIndex, position) => {
         const endIndex = titleIndexes[position + 1] ?? lines.length;
         return parseStudioRecord(rawLines.slice(startIndex, endIndex).map(normalizeStudioPasteLine).filter(Boolean));
-      }).filter((item) => item.name);
+      }).filter((item) => isStudioTitleCandidate(item.name));
 
       return legacyRecords.length ? legacyRecords : tableRecords;
     }
@@ -1270,16 +1291,21 @@ dayjs.locale("ko");
       for (let index = 0; index < lines.length; index += 1) {
         if (!isDurationLine(lines[index])) continue;
 
-        const title = lines[index + 1];
-        if (!title || isStudioHeaderLine(title) || isDurationLine(title)) continue;
+        let titleIndex = index + 1;
+        while (titleIndex < lines.length && !isDurationLine(lines[titleIndex]) && !isStudioTitleCandidate(lines[titleIndex])) {
+          titleIndex += 1;
+        }
 
-        const statusLine = lines[index + 2] || "";
-        const goalLine = lines[index + 3] || "";
-        const dateLine = lines[index + 4] || "";
+        const title = lines[titleIndex];
+        if (!isStudioTitleCandidate(title)) continue;
+
+        const statusLine = lines[titleIndex + 1] || "";
+        const goalLine = lines[titleIndex + 2] || "";
+        const dateLine = lines[titleIndex + 3] || "";
         if (!isStudioStatusLine(statusLine) || !isStudioGoalLine(goalLine) || !isStudioDate(dateLine)) continue;
 
         const metricLines = [];
-        let cursor = index + 5;
+        let cursor = titleIndex + 4;
         while (cursor < lines.length && !isDurationLine(lines[cursor])) {
           if (!isStudioHeaderLine(lines[cursor])) metricLines.push(lines[cursor]);
           cursor += 1;
@@ -1307,14 +1333,14 @@ dayjs.locale("ko");
         index = cursor - 1;
       }
 
-      return records.filter((item) => item.name);
+      return records.filter((item) => isStudioTitleCandidate(item.name));
     }
 
     function parseStudioRecord(recordLines) {
       const durationIndex = recordLines.findIndex(isDurationLine);
       const titleRaw = durationIndex >= 0
-        ? recordLines.slice(durationIndex + 1).find((line) => line && !isStudioHeaderLine(line) && !isStudioStatusLine(line) && !isStudioGoalLine(line) && !isStudioDate(line))
-        : recordLines.find((line) => !isStudioHeaderLine(line) && !isStudioStatusLine(line) && !isStudioGoalLine(line) && !isStudioDate(line));
+        ? recordLines.slice(durationIndex + 1).find(isStudioTitleCandidate)
+        : recordLines.find(isStudioTitleCandidate);
       const title = titleRaw || "";
       const body = recordLines
         .slice(recordLines.indexOf(titleRaw) + 1)
