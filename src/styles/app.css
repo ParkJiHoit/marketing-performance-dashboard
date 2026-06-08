@@ -1,24 +1,25 @@
 :root {
       color-scheme: light;
-      --bg: #eef1f8;
+      --bg: #f2f4f6;
       --surface: #ffffff;
-      --surface-2: #f7f9fd;
-      --ink: #151827;
-      --muted: #6b7684;
-      --line: #e0e6f2;
-      --soft-line: #edf2fa;
-      --youtube: #1267d8;
-      --youtube-2: #2a9df4;
-      --green: #117c55;
-      --green-soft: #e7f3ed;
-      --blue: #0f6bdf;
+      --surface-2: #f8fafc;
+      --surface-3: #eef2f7;
+      --ink: #191f28;
+      --muted: #8b95a1;
+      --line: #e5e8eb;
+      --soft-line: #f1f3f5;
+      --youtube: #0064ff;
+      --youtube-2: #3182f6;
+      --green: #00a86b;
+      --green-soft: #e8f8f0;
+      --blue: #0064ff;
       --blue-soft: #eaf3ff;
-      --amber: #a75f00;
-      --amber-soft: #fff0d8;
-      --red-soft: #ffe8e5;
-      --shadow: 0 24px 54px rgba(37, 58, 100, 0.1);
-      --shadow-soft: 0 14px 34px rgba(37, 58, 100, 0.07);
-      --radius: 18px;
+      --amber: #f59f00;
+      --amber-soft: #fff6df;
+      --red-soft: #ffecec;
+      --shadow: 0 18px 42px rgba(25, 31, 40, 0.08);
+      --shadow-soft: 0 8px 24px rgba(25, 31, 40, 0.05);
+      --radius: 20px;
       --radius-sm: 12px;
       --mono: "IBM Plex Mono", Consolas, monospace;
       --font: "Wanted Sans", "Pretendard", "IBM Plex Sans KR", "Apple SD Gothic Neo", sans-serif;
@@ -26,24 +27,25 @@
 
     [data-theme="dark"] {
       color-scheme: dark;
-      --bg: #101216;
-      --surface: #17191f;
-      --surface-2: #20242c;
+      --bg: #101114;
+      --surface: #17191d;
+      --surface-2: #202329;
+      --surface-3: #282c34;
       --ink: #f2f4f6;
-      --muted: #a7b0bd;
-      --line: #2f3540;
-      --soft-line: #252b34;
-      --youtube: #ff453d;
-      --youtube-2: #ff827a;
-      --green: #51d29b;
-      --green-soft: rgba(81, 210, 155, 0.13);
-      --blue: #7bb3ff;
-      --blue-soft: rgba(123, 179, 255, 0.14);
-      --amber: #ffc062;
-      --amber-soft: rgba(255, 192, 98, 0.13);
-      --red-soft: rgba(255, 69, 61, 0.14);
-      --shadow: 0 22px 56px rgba(0, 0, 0, 0.28);
-      --shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.2);
+      --muted: #9aa3ad;
+      --line: #30343b;
+      --soft-line: #262a31;
+      --youtube: #4593ff;
+      --youtube-2: #7bb3ff;
+      --green: #29d18b;
+      --green-soft: rgba(41, 209, 139, 0.13);
+      --blue: #4593ff;
+      --blue-soft: rgba(69, 147, 255, 0.14);
+      --amber: #ffbf3f;
+      --amber-soft: rgba(255, 191, 63, 0.14);
+      --red-soft: rgba(255, 99, 99, 0.15);
+      --shadow: 0 24px 52px rgba(0, 0, 0, 0.32);
+      --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.22);
     }
 
     * {
@@ -58,9 +60,7 @@
       margin: 0;
       min-height: 100vh;
       overflow-x: hidden;
-      background:
-        radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.88), transparent 26%),
-        linear-gradient(135deg, #f4f6fb 0%, var(--bg) 54%, #e8edf7 100%);
+      background: var(--bg);
       color: var(--ink);
       font-family: var(--font);
       letter-spacing: 0;
@@ -104,11 +104,11 @@
       gap: 16px;
       margin-bottom: 18px;
       padding: 16px 18px;
-      border: 1px solid rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--soft-line);
       border-radius: 24px;
-      background: rgba(255, 255, 255, 0.82);
+      background: var(--surface);
       backdrop-filter: blur(12px);
-      box-shadow: 0 18px 42px rgba(37, 58, 100, 0.08);
+      box-shadow: var(--shadow-soft);
     }
 
     .brand {
@@ -124,11 +124,9 @@
       width: 48px;
       height: 48px;
       flex: 0 0 48px;
-      border: 1px solid color-mix(in srgb, var(--youtube), var(--line) 58%);
-      border-radius: 14px;
-      background:
-        radial-gradient(circle at 30% 22%, color-mix(in srgb, var(--youtube-2), transparent 62%), transparent 38%),
-        linear-gradient(145deg, color-mix(in srgb, var(--surface), var(--youtube) 7%), var(--surface));
+      border: 0;
+      border-radius: 16px;
+      background: var(--youtube);
       box-shadow: var(--shadow-soft);
     }
 
@@ -141,24 +139,24 @@
 
     .brand-icon-ticket,
     .brand-icon-fold {
-      fill: var(--youtube);
+      fill: #fff;
     }
 
     .brand-icon-fold {
-      fill: var(--youtube-2);
+      fill: rgba(255, 255, 255, 0.72);
     }
 
     .brand-icon-line {
       fill: none;
-      stroke: color-mix(in srgb, #fff, var(--youtube-2) 12%);
+      stroke: var(--youtube);
       stroke-linecap: round;
       stroke-width: 2.4;
       opacity: 0.72;
     }
 
     .brand-icon-spark {
-      fill: #fff;
-      stroke: color-mix(in srgb, var(--youtube), #fff 18%);
+      fill: var(--youtube);
+      stroke: #fff;
       stroke-linejoin: round;
       stroke-width: 1.2;
     }
@@ -193,23 +191,29 @@
       min-height: 42px;
       padding: 0 16px;
       border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
+      border-radius: 12px;
       background: var(--surface);
       color: var(--ink);
       font-weight: 700;
       white-space: nowrap;
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset;
-      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+      box-shadow: none;
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
     }
 
     .btn:hover {
       transform: translateY(-1px);
-      border-color: color-mix(in srgb, var(--youtube), var(--line) 42%);
+      border-color: color-mix(in srgb, var(--youtube), var(--line) 35%);
+      background: var(--surface-2);
     }
 
     .btn-primary {
       border-color: var(--youtube);
       background: var(--youtube);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: color-mix(in srgb, var(--youtube), #000 8%);
       color: #fff;
     }
 
@@ -284,9 +288,9 @@
       width: 136px;
       min-height: 136px;
       padding: 16px 12px 14px;
-      border: 1px solid rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--soft-line);
       border-radius: 24px;
-      background: rgba(255, 255, 255, 0.72);
+      background: var(--surface);
       color: var(--ink);
       text-align: center;
       box-shadow: 0 18px 38px rgba(37, 58, 100, 0.07);
@@ -299,7 +303,7 @@
 
     .channel-card.active-channel:hover {
       transform: translateY(-3px);
-      background: rgba(255, 255, 255, 0.94);
+      background: var(--surface);
       box-shadow: 0 24px 48px rgba(37, 58, 100, 0.12);
     }
 
@@ -341,7 +345,7 @@
       height: 30px;
       padding: 6px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.92);
+      background: var(--surface);
       color: currentColor;
     }
 
@@ -394,10 +398,10 @@
     }
 
     .section {
-      padding: 22px;
-      border: 1px solid rgba(255, 255, 255, 0.72);
+      padding: 24px;
+      border: 1px solid var(--soft-line);
       border-radius: 24px;
-      background: rgba(255, 255, 255, 0.86);
+      background: var(--surface);
       box-shadow: var(--shadow-soft);
     }
 
@@ -474,7 +478,7 @@
     .textarea {
       width: 100%;
       min-height: 38px;
-      border: 1px solid var(--line);
+      border: 1px solid var(--soft-line);
       border-radius: var(--radius-sm);
       background: var(--surface-2);
       color: var(--ink);
@@ -497,7 +501,7 @@
     .select:focus,
     .textarea:focus {
       border-color: var(--youtube);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--youtube), transparent 84%);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--youtube), transparent 86%);
       background: var(--surface);
     }
 
@@ -507,24 +511,24 @@
 
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 240px));
-      justify-content: center;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 14px;
     }
 
     .kpi-card {
-      min-height: 142px;
-      padding: 22px 18px;
-      border: 1px solid transparent;
+      min-height: 132px;
+      padding: 20px;
+      border: 1px solid var(--soft-line);
       border-radius: 20px;
-      background: var(--surface-2);
-      text-align: center;
+      background: var(--surface);
+      text-align: left;
+      box-shadow: 0 4px 14px rgba(25, 31, 40, 0.03);
     }
 
     .kpi-label {
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
       gap: 12px;
       margin-bottom: 15px;
       color: var(--muted);
@@ -543,7 +547,7 @@
       display: block;
       font-family: var(--mono);
       font-size: clamp(22px, 2.3vw, 30px);
-      font-weight: 600;
+      font-weight: 800;
       line-height: 1.05;
       overflow-wrap: anywhere;
     }
@@ -569,15 +573,15 @@
     }
 
     .signal-card.good {
-      background: linear-gradient(180deg, var(--green-soft), var(--surface) 74%);
+      background: var(--green-soft);
     }
 
     .signal-card.warn {
-      background: linear-gradient(180deg, var(--amber-soft), var(--surface) 74%);
+      background: var(--amber-soft);
     }
 
     .signal-card.hot {
-      background: linear-gradient(180deg, var(--red-soft), var(--surface) 74%);
+      background: var(--red-soft);
     }
 
     .signal-card h3 {
@@ -613,7 +617,7 @@
       padding: 10px;
       border: 1px solid var(--soft-line);
       border-radius: var(--radius-sm);
-      background: color-mix(in srgb, var(--surface), var(--surface-2) 32%);
+      background: var(--surface-2);
     }
 
     .rank-index {
@@ -655,10 +659,11 @@
 
     .chart-card {
       min-height: 360px;
-      padding: 18px;
-      border: 1px solid transparent;
+      padding: 20px;
+      border: 1px solid var(--soft-line);
       border-radius: 20px;
-      background: var(--surface-2);
+      background: var(--surface);
+      box-shadow: 0 4px 14px rgba(25, 31, 40, 0.03);
     }
 
     .chart-card.wide {
@@ -687,7 +692,7 @@
       max-width: 100%;
       min-width: 0;
       border: 1px solid var(--soft-line);
-      border-radius: var(--radius);
+      border-radius: 18px;
       overflow-x: auto;
       overflow-y: hidden;
       background: var(--surface);
@@ -705,14 +710,14 @@
 
     .tabulator .tabulator-header {
       border-bottom: 1px solid var(--line);
-      background: var(--surface-2);
+      background: var(--surface);
       color: var(--ink);
       font-weight: 700;
     }
 
     .tabulator .tabulator-header .tabulator-col {
       border-color: var(--soft-line);
-      background: var(--surface-2);
+      background: var(--surface);
     }
 
     .tabulator-row {
@@ -722,7 +727,7 @@
     }
 
     .tabulator-row.tabulator-row-even {
-      background: color-mix(in srgb, var(--surface), var(--surface-2) 28%);
+      background: var(--surface-2);
     }
 
     .tabulator-row .tabulator-cell {
@@ -731,7 +736,7 @@
 
     .tabulator .tabulator-footer {
       border-top: 1px solid var(--line);
-      background: var(--surface-2);
+      background: var(--surface);
       color: var(--ink);
     }
 
@@ -841,9 +846,7 @@
 
     .insight-card.featured {
       border-color: color-mix(in srgb, var(--youtube), var(--line) 36%);
-      background:
-        linear-gradient(180deg, color-mix(in srgb, var(--youtube), transparent 91%), transparent 64%),
-        var(--surface);
+      background: color-mix(in srgb, var(--youtube), var(--surface) 92%);
     }
 
     .insight-card h3,
@@ -1017,14 +1020,20 @@
       gap: 7px;
       margin-bottom: 16px;
       padding: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.74);
+      border: 1px solid var(--soft-line);
       border-radius: 14px;
-      background: #f4f7fc;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      background: var(--surface-2);
+      box-shadow: none;
     }
 
     .analysis-tabs .tab-btn {
       border-radius: 8px;
+    }
+
+    .analysis-tabs .tab-btn.active {
+      background: var(--surface);
+      color: var(--youtube);
+      box-shadow: 0 6px 16px rgba(25, 31, 40, 0.06);
     }
 
     .analysis-panel {
@@ -1046,14 +1055,14 @@
       display: grid;
       align-content: start;
       grid-column: span 6;
-      gap: 13px;
+      gap: 14px;
       min-height: 0;
-      padding: 18px;
-      border: 1px solid rgba(226, 233, 244, 0.95);
+      padding: 20px;
+      border: 1px solid var(--soft-line);
       border-radius: 22px;
-      background: rgba(255, 255, 255, 0.94);
+      background: var(--surface);
       overflow: hidden;
-      box-shadow: 0 18px 38px rgba(37, 58, 100, 0.07);
+      box-shadow: 0 6px 18px rgba(25, 31, 40, 0.04);
     }
 
     .analysis-card::before {
@@ -1061,15 +1070,13 @@
       position: absolute;
       inset: 0 auto 0 0;
       width: 5px;
-      background: #d9e2f1;
+      background: var(--line);
     }
 
     .analysis-card.featured {
       grid-column: span 7;
-      border-color: color-mix(in srgb, var(--youtube), var(--line) 38%);
-      background:
-        linear-gradient(145deg, color-mix(in srgb, var(--youtube), transparent 89%), transparent 62%),
-        var(--surface);
+      border-color: color-mix(in srgb, var(--youtube), var(--line) 45%);
+      background: var(--surface);
     }
 
     .analysis-card.featured + .analysis-card {
@@ -1098,15 +1105,15 @@
 
     .analysis-card h3 {
       margin: 0;
-      color: #667085;
+      color: var(--muted);
       font-size: 12px;
       font-weight: 900;
-      text-transform: uppercase;
+      text-transform: none;
     }
 
     .analysis-card h4 {
       margin: 0;
-      font-size: 21px;
+      font-size: 22px;
       line-height: 1.28;
       letter-spacing: 0;
     }
@@ -1129,15 +1136,15 @@
       gap: 9px;
       align-items: center;
       padding: 10px 11px;
-      border: 1px solid #e8edf6;
-      border-radius: 13px;
-      background: #f8faff;
+      border: 1px solid var(--soft-line);
+      border-radius: 14px;
+      background: var(--surface-2);
       transition: border-color 0.18s ease, background 0.18s ease;
     }
 
     .decision-row:hover {
-      border-color: #d6e3f5;
-      background: #ffffff;
+      border-color: color-mix(in srgb, var(--youtube), var(--line) 60%);
+      background: var(--surface);
     }
 
     .decision-main {
@@ -1184,7 +1191,7 @@
       align-items: center;
       padding: 10px;
       border: 1px solid var(--soft-line);
-      border-radius: var(--radius-sm);
+      border-radius: 14px;
       background: var(--surface-2);
       color: var(--muted);
       font-size: 12px;
