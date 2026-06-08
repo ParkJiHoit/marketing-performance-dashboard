@@ -55,11 +55,11 @@
             </span>
             <h3>YouTube Studio</h3>
           </article>
-          <article class="channel-card disabled">
+          <article class="channel-card active-channel" id="naverSaChannelCard" tabindex="0" role="button" aria-label="네이버 SA 성과 대시보드로 이동">
             <span class="channel-icon" aria-hidden="true" style="color:#19a36f;">
               <svg viewBox="0 0 24 24" fill="none"><path d="M5 18V6h4.2l5.6 8.2V6H19v12h-4.2L9.2 9.8V18H5Z" fill="currentColor"/></svg>
             </span>
-            <h3>Naver Ads</h3>
+            <h3>Naver SA</h3>
           </article>
           <article class="channel-card disabled">
             <span class="channel-icon" aria-hidden="true">
@@ -145,6 +145,161 @@
               <p>각 단계의 전환 흐름과 이탈 규모를 봅니다.</p>
               <div class="chart-box"><canvas id="funnelChart"></canvas></div>
             </article>
+          </section>
+        </div>
+      </section>
+
+      <section id="naverSaPage" class="page" aria-labelledby="naverSaTitle">
+        <div class="dashboard-grid naver-sa-dashboard">
+          <section class="section naver-sa-hero">
+            <div class="section-header">
+              <div>
+                <h2 id="naverSaTitle" class="section-title">네이버 SA 성과 분석 종합 대시보드</h2>
+                <p class="section-subtitle">검색광고 성과, 키워드 효율, 검색어 확장/제외 후보, 예산과 입찰 판단을 한 화면에서 검토합니다.</p>
+              </div>
+              <div class="control-cluster">
+                <span id="naverSaModeBadge" class="pill completed">API Data</span>
+                <button id="naverSaRefreshBtn" class="btn" type="button">데이터 새로고침</button>
+              </div>
+            </div>
+            <div id="naverSaNotice" class="naver-sa-notice"></div>
+            <div id="naverSaFilters" class="naver-sa-filters">
+              <select id="naverSaDatePreset" class="select" aria-label="기간 선택">
+                <option value="today">오늘</option>
+                <option value="yesterday">어제</option>
+                <option value="7d" selected>최근 7일</option>
+                <option value="14d">최근 14일</option>
+                <option value="30d">최근 30일</option>
+                <option value="custom">직접 선택</option>
+              </select>
+              <input id="naverSaStartDate" class="field" type="date" aria-label="시작일" />
+              <input id="naverSaEndDate" class="field" type="date" aria-label="종료일" />
+              <select id="naverSaCampaignFilter" class="select" aria-label="캠페인 선택"></select>
+              <select id="naverSaAdGroupFilter" class="select" aria-label="광고그룹 선택"></select>
+              <input id="naverSaKeywordSearch" class="field" type="search" placeholder="키워드/검색어 검색" />
+              <select id="naverSaPerformanceFilter" class="select" aria-label="성과 기준 필터">
+                <option value="all">전체</option>
+                <option value="hasConversion">전환 있음</option>
+                <option value="hasCost">비용 발생</option>
+                <option value="hasClick">클릭 있음</option>
+                <option value="noConversion">전환 없음</option>
+                <option value="lowEfficiency">저효율 후보</option>
+                <option value="highEfficiency">고효율 후보</option>
+              </select>
+            </div>
+          </section>
+
+          <section class="section">
+            <div id="naverSaKpiGrid" class="kpi-grid naver-sa-kpis"></div>
+          </section>
+
+          <section class="section">
+            <div id="naverSaTabs" class="naver-sa-tabs" role="tablist" aria-label="네이버 SA 분석 탭">
+              <button class="tab-btn active" type="button" data-naver-sa-tab="overview">전체 요약</button>
+              <button class="tab-btn" type="button" data-naver-sa-tab="campaigns">캠페인 분석</button>
+              <button class="tab-btn" type="button" data-naver-sa-tab="adgroups">광고그룹 분석</button>
+              <button class="tab-btn" type="button" data-naver-sa-tab="keywords">키워드 분석</button>
+              <button class="tab-btn" type="button" data-naver-sa-tab="searchTerms">검색어 분석</button>
+              <button class="tab-btn" type="button" data-naver-sa-tab="creatives">소재 분석</button>
+              <button class="tab-btn" type="button" data-naver-sa-tab="budgetBid">예산/입찰 판단</button>
+              <button class="tab-btn" type="button" data-naver-sa-tab="insights">인사이트 요약</button>
+            </div>
+
+            <div id="naverSaLoading" class="empty-state" hidden>
+              <div>
+                <h3>네이버 SA 데이터를 불러오는 중입니다</h3>
+                <p>캠페인, 광고그룹, 키워드, 검색어 데이터를 정리하고 있습니다.</p>
+              </div>
+            </div>
+            <div id="naverSaError" class="empty-state error-state" hidden>
+              <div>
+                <h3>데이터를 불러오지 못했습니다</h3>
+                <p id="naverSaErrorMessage">네이버 SA 데이터를 불러오지 못했습니다. API 인증 정보 또는 요청 범위를 확인해주세요.</p>
+              </div>
+            </div>
+            <div id="naverSaEmpty" class="empty-state" hidden>
+              <div>
+                <h3>선택한 기간에 조회된 성과 데이터가 없습니다</h3>
+                <p>기간 또는 필터 조건을 넓혀 다시 확인해주세요.</p>
+              </div>
+            </div>
+
+            <div id="naverSaTabPanels">
+              <div class="naver-sa-panel active" data-naver-sa-panel="overview">
+                <div class="chart-grid naver-sa-chart-grid">
+                  <article class="chart-card wide">
+                    <h3>일자별 성과 추이</h3>
+                    <p>비용, 클릭수, 전환수 흐름을 함께 확인합니다.</p>
+                    <div class="chart-box"><canvas id="naverSaDailyTrendChart"></canvas></div>
+                  </article>
+                  <article class="chart-card">
+                    <h3>캠페인별 비용 비교</h3>
+                    <p>선택 기간의 예산 사용 집중도를 봅니다.</p>
+                    <div class="chart-box"><canvas id="naverSaCampaignCostChart"></canvas></div>
+                  </article>
+                  <article class="chart-card">
+                    <h3>캠페인별 CPA 비교</h3>
+                    <p>전환이 없는 캠페인은 별도 라벨로 표시합니다.</p>
+                    <div class="chart-box"><canvas id="naverSaCampaignCpaChart"></canvas></div>
+                  </article>
+                  <article class="chart-card">
+                    <h3>광고그룹 비용 vs 전환</h3>
+                    <p>비용만 쓰는 그룹과 전환이 있는 그룹을 구분합니다.</p>
+                    <div class="chart-box"><canvas id="naverSaAdGroupScatterChart"></canvas></div>
+                  </article>
+                  <article class="chart-card">
+                    <h3>검색어 분류 비중</h3>
+                    <p>확장/제외/유지/모니터링 후보를 요약합니다.</p>
+                    <div class="chart-box"><canvas id="naverSaSearchTermShareChart"></canvas></div>
+                  </article>
+                </div>
+                <div id="naverSaOverviewInsights" class="insight-grid naver-sa-insights"></div>
+              </div>
+
+              <div class="naver-sa-panel" data-naver-sa-panel="campaigns">
+                <div id="naverSaCampaignTable"></div>
+              </div>
+              <div class="naver-sa-panel" data-naver-sa-panel="adgroups">
+                <div id="naverSaAdGroupTable"></div>
+              </div>
+              <div class="naver-sa-panel" data-naver-sa-panel="keywords">
+                <div class="toolbar naver-sa-table-toolbar">
+                  <select id="naverSaKeywordSort" class="select" aria-label="키워드 정렬">
+                    <option value="costDesc">광고비 높은 순</option>
+                    <option value="clickDesc">클릭수 높은 순</option>
+                    <option value="ctrDesc">CTR 높은 순</option>
+                    <option value="cpcDesc">CPC 높은 순</option>
+                    <option value="conversionDesc">전환수 높은 순</option>
+                    <option value="cpaAsc">CPA 낮은 순</option>
+                    <option value="excludeFirst">제외 후보 우선</option>
+                    <option value="coreFirst">핵심 키워드 우선</option>
+                  </select>
+                </div>
+                <div class="chart-grid naver-sa-chart-grid compact">
+                  <article class="chart-card">
+                    <h3>키워드별 광고비 TOP 10</h3>
+                    <div class="chart-box"><canvas id="naverSaKeywordCostTopChart"></canvas></div>
+                  </article>
+                  <article class="chart-card">
+                    <h3>키워드별 CPA TOP 10</h3>
+                    <div class="chart-box"><canvas id="naverSaKeywordCpaTopChart"></canvas></div>
+                  </article>
+                </div>
+                <div id="naverSaKeywordTable"></div>
+              </div>
+              <div class="naver-sa-panel" data-naver-sa-panel="searchTerms">
+                <div id="naverSaSearchTermTable"></div>
+              </div>
+              <div class="naver-sa-panel" data-naver-sa-panel="creatives">
+                <div id="naverSaCreativeTable"></div>
+              </div>
+              <div class="naver-sa-panel" data-naver-sa-panel="budgetBid">
+                <div id="naverSaBudgetBidCards" class="insight-grid naver-sa-insights"></div>
+              </div>
+              <div class="naver-sa-panel" data-naver-sa-panel="insights">
+                <div id="naverSaInsightSummary" class="naver-sa-summary"></div>
+              </div>
+            </div>
           </section>
         </div>
       </section>
@@ -272,6 +427,11 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <script src="config/naverSaPerformanceRules.js"></script>
+  <script src="config/naverSaKeywordRules.js"></script>
+  <script src="src/lib/naver-sa/naverSaMetrics.js"></script>
+  <script src="src/lib/naver-sa/naverSaApiService.js"></script>
+  <script src="src/lib/naver-sa/naverSaDashboard.js"></script>
   <script src="src/app.js"></script>
 </body>
 </html>

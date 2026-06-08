@@ -7,6 +7,10 @@ dayjs.locale("ko");
         id: "youtube",
         title: "YouTube Studio",
         storageKey: "yt-studio-promotions-v1"
+      },
+      naverSa: {
+        id: "naverSa",
+        title: "Naver SA"
       }
     };
 
@@ -54,10 +58,12 @@ dayjs.locale("ko");
       pageSubtitle: $("#pageSubtitle"),
       hubPage: $("#hubPage"),
       dashboardPage: $("#dashboardPage"),
+      naverSaPage: $("#naverSaPage"),
       backToHubBtn: $("#backToHubBtn"),
       themeToggleBtn: $("#themeToggleBtn"),
       themeIcon: $("#themeIcon"),
       youtubeChannelCard: $("#youtubeChannelCard"),
+      naverSaChannelCard: $("#naverSaChannelCard"),
       addPromotionBtn: $("#addPromotionBtn"),
       loadSampleBtn: $("#loadSampleBtn"),
       kpiGrid: $("#kpiGrid"),
@@ -214,11 +220,17 @@ dayjs.locale("ko");
     }
 
     function setRoute(route) {
-      window.location.hash = route === "dashboard" ? "#youtube" : "#hub";
+      if (route === "dashboard") window.location.hash = "#youtube";
+      else if (route === "naverSa") window.location.hash = "#naver-sa";
+      else window.location.hash = "#hub";
     }
 
     function isDashboardActive() {
       return dom.dashboardPage.classList.contains("active");
+    }
+
+    function isNaverSaActive() {
+      return dom.naverSaPage.classList.contains("active");
     }
 
     function syncDashboardLayout() {
@@ -258,16 +270,21 @@ dayjs.locale("ko");
     }
 
     function applyRoute() {
-      const route = window.location.hash === "#youtube" ? "dashboard" : "hub";
+      const route = window.location.hash === "#youtube" ? "dashboard" : window.location.hash === "#naver-sa" ? "naverSa" : "hub";
       dom.hubPage.classList.toggle("active", route === "hub");
       dom.dashboardPage.classList.toggle("active", route === "dashboard");
-      dom.backToHubBtn.hidden = route !== "dashboard";
+      dom.naverSaPage.classList.toggle("active", route === "naverSa");
+      dom.backToHubBtn.hidden = route === "hub";
       dom.loadSampleBtn.hidden = route !== "dashboard";
       dom.addPromotionBtn.hidden = route !== "dashboard";
-      dom.pageTitle.textContent = "성과 분석 대시보드";
-      dom.pageSubtitle.textContent = route === "dashboard" ? "프로모션 성과 분석" : "채널별 성과 보기";
+      dom.pageTitle.textContent = route === "naverSa" ? "네이버 SA 성과 분석" : "성과 분석 대시보드";
+      dom.pageSubtitle.textContent = route === "dashboard" ? "프로모션 성과 분석" : route === "naverSa" ? "검색광고 성과 판단" : "채널별 성과 보기";
       if (route === "dashboard") {
         ensureDashboardReady();
+      } else if (route === "naverSa") {
+        if (window.NaverSaDashboard) window.NaverSaDashboard.activate();
+      } else if (window.NaverSaDashboard) {
+        window.NaverSaDashboard.deactivate();
       }
     }
 
@@ -278,6 +295,8 @@ dayjs.locale("ko");
       if (isDashboardActive()) {
         updateFunnelChart();
         syncDashboardLayout();
+      } else if (isNaverSaActive() && window.NaverSaDashboard) {
+        window.NaverSaDashboard.activate();
       }
     }
 
@@ -1100,6 +1119,15 @@ dayjs.locale("ko");
       return String(line || "").replace(/\s+/g, " ").trim();
     }
 
+    function stripStudioPreviewImageLabel(line) {
+      return cleanStudioLine(line).replace(/^(?:동영상\s*)?미리보기\s*이미지\s*:\s*/i, "").trim();
+    }
+
+    function normalizeStudioPasteLine(line) {
+      const cleaned = cleanStudioLine(line);
+      return stripStudioPreviewImageLabel(cleaned);
+    }
+
     function isDurationLine(line) {
       return /^\d{1,2}:\d{2}(?::\d{2})?$/.test(line);
     }
@@ -1214,22 +1242,23 @@ dayjs.locale("ko");
     }
 
     function parseStudioPaste(text) {
-      const lines = String(text || "")
+      const rawLines = String(text || "")
         .split(/\r?\n/)
         .map(cleanStudioLine)
         .filter(Boolean);
+      const lines = rawLines.map(normalizeStudioPasteLine).filter(Boolean);
 
       const tableRecords = parseStudioTableRecords(lines);
-      const titleIndexes = lines
+      const titleIndexes = rawLines
         .map((line, index) => ({ line, index }))
-        .filter(({ line }) => line.startsWith("동영상 미리보기 이미지:"))
+        .filter(({ line }) => /^(?:동영상\s*)?미리보기\s*이미지\s*:/i.test(line))
         .map(({ index }) => index);
 
       if (!titleIndexes.length) return tableRecords;
 
       const legacyRecords = titleIndexes.map((startIndex, position) => {
         const endIndex = titleIndexes[position + 1] ?? lines.length;
-        return parseStudioRecord(lines.slice(startIndex, endIndex));
+        return parseStudioRecord(rawLines.slice(startIndex, endIndex).map(normalizeStudioPasteLine).filter(Boolean));
       }).filter((item) => item.name);
 
       return legacyRecords.length ? legacyRecords : tableRecords;
@@ -1282,10 +1311,11 @@ dayjs.locale("ko");
     }
 
     function parseStudioRecord(recordLines) {
-      const titleRaw = recordLines.find((line) => line.startsWith("동영상 미리보기 이미지:")) || "";
-      const title = titleRaw.replace("동영상 미리보기 이미지:", "").trim();
+      const titleRaw = recordLines.find((line) => !isDurationLine(line) && !isStudioHeaderLine(line) && !isStudioStatusLine(line) && !isStudioGoalLine(line) && !isStudioDate(line)) || "";
+      const title = stripStudioPreviewImageLabel(titleRaw);
       const body = recordLines
         .slice(recordLines.indexOf(titleRaw) + 1)
+        .map(normalizeStudioPasteLine)
         .filter((line) => !isDurationLine(line))
         .filter((line) => !isStudioHeaderLine(line));
 
@@ -1586,6 +1616,10 @@ dayjs.locale("ko");
       dom.youtubeChannelCard.addEventListener("click", () => setRoute("dashboard"));
       dom.youtubeChannelCard.addEventListener("keydown", (event) => {
         if (event.key === "Enter" || event.key === " ") setRoute("dashboard");
+      });
+      dom.naverSaChannelCard.addEventListener("click", () => setRoute("naverSa"));
+      dom.naverSaChannelCard.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") setRoute("naverSa");
       });
       dom.backToHubBtn.addEventListener("click", () => setRoute("hub"));
       dom.themeToggleBtn.addEventListener("click", () => {
