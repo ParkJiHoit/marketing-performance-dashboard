@@ -115,20 +115,46 @@
     .brand-mark {
       display: grid;
       place-items: center;
-      width: 72px;
+      width: 48px;
       height: 48px;
-      flex: 0 0 72px;
-      border: 0;
-      border-radius: 0;
-      background: transparent;
-      box-shadow: none;
+      flex: 0 0 48px;
+      border: 1px solid color-mix(in srgb, var(--youtube), var(--line) 58%);
+      border-radius: 14px;
+      background:
+        radial-gradient(circle at 30% 22%, color-mix(in srgb, var(--youtube-2), transparent 62%), transparent 38%),
+        linear-gradient(145deg, color-mix(in srgb, var(--surface), var(--youtube) 7%), var(--surface));
+      box-shadow: var(--shadow-soft);
     }
 
-    .brand-mark img {
+    .brand-icon {
       display: block;
-      width: 72px;
-      height: auto;
-      object-fit: contain;
+      width: 34px;
+      height: 34px;
+      overflow: visible;
+    }
+
+    .brand-icon-ticket,
+    .brand-icon-fold {
+      fill: var(--youtube);
+    }
+
+    .brand-icon-fold {
+      fill: var(--youtube-2);
+    }
+
+    .brand-icon-line {
+      fill: none;
+      stroke: color-mix(in srgb, #fff, var(--youtube-2) 12%);
+      stroke-linecap: round;
+      stroke-width: 2.4;
+      opacity: 0.72;
+    }
+
+    .brand-icon-spark {
+      fill: #fff;
+      stroke: color-mix(in srgb, var(--youtube), #fff 18%);
+      stroke-linejoin: round;
+      stroke-width: 1.2;
     }
 
     .brand h1 {
