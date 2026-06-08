@@ -1137,6 +1137,12 @@ dayjs.locale("ko");
       return false;
     }
 
+    function hasStudioMetricFragment(line) {
+      const text = cleanStudioLine(line);
+      return /[₩$]\s*\d[\d,]*(?:\.\d+)?/.test(text)
+        || /20\d{2}\.\s*\d{1,2}\.\s*\d{1,2}\.?/.test(text);
+    }
+
     function isStudioTitleCandidate(line) {
       const text = cleanStudioLine(line);
       return Boolean(text)
@@ -1146,7 +1152,8 @@ dayjs.locale("ko");
         && !isStudioStatusLine(text)
         && !isStudioGoalLine(text)
         && !isStudioDate(text)
-        && !isStudioMetricLine(text);
+        && !isStudioMetricLine(text)
+        && !hasStudioMetricFragment(text);
     }
 
     function isDurationLine(line) {
@@ -1172,11 +1179,11 @@ dayjs.locale("ko");
     }
 
     function isStudioStatusLine(line) {
-      return /진행|활성|게재|운영|완료|종료|일시|중지|중단|대기|초안|검토/.test(cleanStudioLine(line));
+      return /^(진행중|활성(?:\(제한적\))?|게재|운영|완료|종료됨?|일시중지됨?|중지|중단|대기|초안|검토)$/.test(cleanStudioLine(line));
     }
 
     function isStudioGoalLine(line) {
-      return /웹\s*사이트|웹사이트|방문|트래픽|구독|조회|인지|노출|전환|구매|문의/.test(cleanStudioLine(line));
+      return /^(웹\s*사이트\s*방문|웹사이트\s*방문|방문|트래픽|구독|조회수?|인지|노출|전환|구매|문의)$/.test(cleanStudioLine(line));
     }
 
     function isPlainFormattedInteger(value) {
@@ -1262,7 +1269,57 @@ dayjs.locale("ko");
       return "traffic";
     }
 
+    function removeStudioPreviewImageText(text) {
+      return String(text || "")
+        .replace(/(?:동영상\s*)?미리보기\s*이미지\s*:\s*.*?(?=\s+\d{1,2}:\d{2}(?::\d{2})?\s+)/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function parseStudioInlineRecords(text) {
+      const source = removeStudioPreviewImageText(text);
+      const statusPattern = "활성\\(제한적\\)|활성|일시중지됨|일시중지|종료됨|종료|완료|진행중|초안|대기|검토";
+      const goalPattern = "웹\\s*사이트\\s*방문|웹사이트\\s*방문|방문|트래픽|구독|조회수|조회|인지|노출|전환|구매|문의";
+      const datePattern = "20\\d{2}\\.\\s*\\d{1,2}\\.\\s*\\d{1,2}\\.?";
+      const moneyPattern = "[₩$]?\\s*\\d[\\d,]*(?:\\.\\d+)?";
+      const integerPattern = "\\d[\\d,]*";
+      const recordPattern = new RegExp(
+        `^(\\d{1,2}:\\d{2}(?::\\d{2})?)\\s+(.+?)\\s+(${statusPattern})\\s+(${goalPattern})\\s+(${datePattern})\\s+(${moneyPattern})\\s+(${integerPattern})\\s+(${integerPattern})\\s+(${integerPattern})\\s+(${integerPattern})\\s*$`
+      );
+      const records = [];
+      const chunks = source
+        .split(/(?=\b\d{1,2}:\d{2}(?::\d{2})?\s+)/)
+        .map(cleanStudioLine)
+        .filter((chunk) => /^\d{1,2}:\d{2}(?::\d{2})?\s+/.test(chunk));
+
+      chunks.forEach((chunk) => {
+        const match = chunk.match(recordPattern);
+        if (!match) return;
+        const title = cleanStudioLine(match[2]);
+        if (!isStudioTitleCandidate(title)) return;
+        records.push(normalizePromotion({
+          name: title,
+          status: normalizeStudioStatus(match[3]),
+          goal: normalizeStudioGoal(match[4]),
+          createdAt: parseStudioDate(match[5]),
+          title,
+          description: "YouTube Studio에서 붙여넣은 프로모션 데이터",
+          videoUrl: "",
+          cost: match[6],
+          impressions: match[7],
+          views: match[8],
+          subscribers: match[9],
+          visitors: match[10]
+        }));
+      });
+
+      return records;
+    }
+
     function parseStudioPaste(text) {
+      const inlineRecords = parseStudioInlineRecords(text);
+      if (inlineRecords.length) return inlineRecords;
+
       const rawLines = String(text || "")
         .split(/\r?\n/)
         .map(cleanStudioLine)
