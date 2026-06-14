@@ -298,11 +298,52 @@
     }
 
     .hub-launcher {
+      position: relative;
       display: grid;
       align-content: center;
       justify-items: center;
       min-height: calc(100vh - 132px);
       padding: 38px 0 72px;
+      overflow: hidden;
+      border-radius: var(--radius);
+      cursor: crosshair;
+    }
+
+    .hub-launcher > *:not(canvas) {
+      position: relative;
+      z-index: 1;
+    }
+
+    #hubParticleCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    :root {
+      --particle-accent: 255, 90, 95;
+      --particle-secondary: 49, 130, 246;
+      --particle-dot: rgba(25, 31, 40, 0.55);
+      --particle-dot-accent: rgba(255, 90, 95, 0.85);
+      --particle-dot-blue: rgba(49, 130, 246, 0.7);
+      --particle-bg-glow-r: 255;
+      --particle-bg-glow-g: 90;
+      --particle-bg-glow-b: 95;
+      --particle-bg-star: rgba(100, 115, 135, 0.25);
+    }
+
+    [data-theme="dark"] {
+      --particle-dot: rgba(242, 244, 246, 0.6);
+      --particle-dot-accent: rgba(255, 125, 130, 0.9);
+      --particle-dot-blue: rgba(69, 147, 255, 0.8);
+      --particle-bg-glow-r: 255;
+      --particle-bg-glow-g: 125;
+      --particle-bg-glow-b: 130;
+      --particle-bg-star: rgba(220, 230, 245, 0.18);
     }
 
     .launcher-title {

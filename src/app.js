@@ -410,6 +410,7 @@ dayjs.locale("ko");
       } else if (isNaverSaActive() && window.NaverSaDashboard) {
         window.NaverSaDashboard.activate();
       }
+      if (window.HubParticles) window.HubParticles.updateTheme(theme);
     }
 
     function initTheme() {
@@ -2115,6 +2116,7 @@ dayjs.locale("ko");
       loadPromotions();
       bindEvents();
       applyRoute();
+      if (window.HubParticles) window.HubParticles.init();
     }
 
     document.addEventListener("DOMContentLoaded", boot);

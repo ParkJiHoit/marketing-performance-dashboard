@@ -16,6 +16,7 @@
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.13/dayjs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.13/locale/ko.js"></script>
   <link rel="stylesheet" href="src/styles/app.css" />
+  <script src="src/lib/hubParticles.js" defer></script>
 </head>
 <body>
   <div class="app-shell">
@@ -46,7 +47,8 @@
 
     <main>
       <section id="hubPage" class="page active" aria-labelledby="hubTitle">
-        <div class="hub-launcher">
+        <div class="hub-launcher" id="hubLauncher">
+          <canvas id="hubParticleCanvas" aria-hidden="true"></canvas>
           <h2 id="hubTitle" class="launcher-title">채널을 선택하세요</h2>
         <div class="channel-grid" aria-label="채널 선택">
           <article class="channel-card active-channel" id="youtubeChannelCard" tabindex="0" role="button" aria-label="YouTube Studio 성과 대시보드로 이동">
